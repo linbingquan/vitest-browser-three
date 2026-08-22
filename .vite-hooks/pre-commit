@@ -1,1 +1,11 @@
 vp staged
+
+# DECISIONS.md (English, authoritative) and DECISIONS.zh.md (Chinese
+# translation) must be updated in the same commit.
+if git diff --cached --name-only | grep -q '^docs/DECISIONS\.md$'; then
+  if ! git diff --cached --name-only | grep -q '^docs/DECISIONS\.zh\.md$'; then
+    echo "ERROR: docs/DECISIONS.md changed but docs/DECISIONS.zh.md is not staged in the same commit."
+    echo "Update the Chinese translation and stage it, or explicitly skip with 'git commit --no-verify'."
+    exit 1
+  fi
+fi
