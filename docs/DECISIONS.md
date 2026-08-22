@@ -122,6 +122,15 @@ must be refactored into explicit parameters.
 - Multi-backend & probing tests (`test/backend.test.ts`)
 - Canary regression (`test/canary.test.ts`)
 
+### Type-safety governance for three internals
+
+- Minimal structural interfaces for untyped three APIs live in
+  `src/three-internals.ts` (single source of truth for our assumptions).
+- `AssertionNode.setup` types its builder as
+  `NodeBuilderLike & Parameters<Node["getNodeType"]>[0]` instead of
+  deep-importing three's internal NodeBuilder class (fragile across minor
+  versions and conflicts with the externalization policy).
+
 ## Dependency strategy
 
 - `three` and `vitest` / `@vitest/*` are always external and never inlined

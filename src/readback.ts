@@ -1,5 +1,6 @@
 import type { WebGPURenderer } from "three/webgpu";
 import type { StorageInstancedBufferAttribute } from "three/webgpu";
+import type { BackendLike } from "./three-internals.ts";
 
 /**
  * Read back the contents of a storage buffer attribute from the GPU.
@@ -11,7 +12,7 @@ export async function readStorage(
   renderer: WebGPURenderer,
   attribute: StorageInstancedBufferAttribute,
 ): Promise<Float32Array> {
-  const backend = renderer.backend as any;
+  const backend = renderer.backend as unknown as BackendLike;
   if (typeof backend.getArrayBufferAsync !== "function") {
     throw new Error(
       "[vitest-browser-three] Current three.js backend does not provide getArrayBufferAsync(). Please upgrade three.js.",

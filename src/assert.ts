@@ -14,6 +14,13 @@ import {
 } from "three/tsl";
 import { getRenderer, isBackendAvailable, type BackendName } from "./context.ts";
 import { getDefaultBackends } from "./config.ts";
+import type {
+  NodeBuilderLike,
+  NodeWithElement,
+  NodeWithSwizzles,
+  NodeWithToVar,
+  NodeWithToVec4,
+} from "./three-internals.ts";
 import { readStorage } from "./readback.ts";
 
 /** Anything an assertion can compare against: a TSL node or a CPU-side constant. */
@@ -73,7 +80,7 @@ const SWIZZLE = ["x", "y", "z", "w"] as const;
  * conversion, so padding/broadcast components always match.
  */
 export function toVec4(node: Node): Node {
-  const n = node as unknown as { toVec4?: () => Node };
+  const n = node as unknown as NodeWithToVec4;
   if (typeof n.toVec4 !== "function") {
     throw new Error(
       `[vitest-browser-three] Unsupported node for GPU assertion: only scalar/vector nodes are supported (got ${node.constructor?.name ?? typeof node}).`,
@@ -96,14 +103,39 @@ function formatFloat(n: number): string {
  */
 function padToVec4(value: Node, count: number): Node {
   if (count === 4) return value;
+  const sw = value as unknown as NodeWithSwizzles;
   const components: Node[] = [];
   for (let i = 0; i < 4; i++) {
     components.push(
-      i < count ? (count === 1 ? float(value as never) : (value as any)[SWIZZLE[i]]) : float(0),
+      i < count
+        ? count === 1
+          ? float(value as never)
+          : sw[SWIZZLE[i] as keyof NodeWithSwizzles]
+        : float(0),
     );
   }
   return vec4(...(components as [Node<"float">, Node<"float">, Node<"float">, Node<"float">]));
 }
+
+type Tuple9 = [number, number, number, number, number, number, number, number, number];
+type Tuple16 = [
+  number,
+  number,
+  number,
+  number,
+  number,
+  number,
+  number,
+  number,
+  number,
+  number,
+  number,
+  number,
+  number,
+  number,
+  number,
+  number,
+];
 
 /** Convert a CPU-side constant into a TSL constant node (scalar/vector/matrix). */
 export function cpuToNode(value: number | number[] | TypedArray): Node {
@@ -121,30 +153,9 @@ export function cpuToNode(value: number | number[] | TypedArray): Node {
     case 9:
       // arr is length-checked above; the tuple assertion preserves the
       // current (TSL/GLSL column-major) argument order exactly.
-      return mat3(
-        ...(arr as [number, number, number, number, number, number, number, number, number]),
-      );
+      return mat3(...(arr as Tuple9));
     case 16:
-      return mat4(
-        ...(arr as [
-          number,
-          number,
-          number,
-          number,
-          number,
-          number,
-          number,
-          number,
-          number,
-          number,
-          number,
-          number,
-          number,
-          number,
-          number,
-          number,
-        ]),
-      );
+      return mat4(...(arr as Tuple16));
     default:
       throw new Error(
         `[vitest-browser-three] expected value must have 1-4 (vector) or 9/16 (matrix) components, got ${arr.length}`,
@@ -217,7 +228,7 @@ function describeFailure(
 
 /** Force evaluation of a TSL expression into a variable (node.toVar()). */
 function toVar(node: Node): Node {
-  const n = node as unknown as { toVar?: () => Node };
+  const n = node as unknown as NodeWithToVar;
   if (typeof n.toVar !== "function") {
     throw new Error(
       `[vitest-browser-three] Unsupported node for GPU assertion: node has no toVar() method (got ${node.constructor?.name ?? typeof node}).`,
@@ -265,7 +276,10 @@ class AssertionNode extends Node {
     this.baseRow = baseRow;
   }
 
-  setup(builder: any): undefined {
+  // three's real NodeBuilder class has no usable type in @types/three; the
+  // intersection below declares only what we rely on (see NodeBuilderLike)
+  // while staying assignable to the base setup signature.
+  setup(builder: NodeBuilderLike & Parameters<Node["getNodeType"]>[0]): undefined {
     // TSL's "color" type behaves as vec3 in shaders; normalize so color()
     // nodes can be compared against vec3 values/constants directly.
     const normalizeType = (t: string) => (t === "color" ? "vec3" : t);
@@ -308,8 +322,8 @@ class AssertionNode extends Node {
     const v2 = toVar(this.value2);
 
     for (let c = 0; c < columns; c++) {
-      const col1 = isMatrix ? (v1 as unknown as { element: (i: number) => Node }).element(c) : v1;
-      const col2 = isMatrix ? (v2 as unknown as { element: (i: number) => Node }).element(c) : v2;
+      const col1 = isMatrix ? (v1 as unknown as NodeWithElement).element(c) : v1;
+      const col2 = isMatrix ? (v2 as unknown as NodeWithElement).element(c) : v2;
       this.writeColumn(c, padToVec4(col1, columnLength), padToVec4(col2, columnLength));
     }
 
