@@ -1,5 +1,6 @@
 import { describe, it, afterAll, expect } from "vitest";
-import { float, sin, cos, vec2, vec3, vec4 } from "three/tsl";
+import { float, sin, cos, vec2, vec3, vec4, mat4 } from "three/tsl";
+import { Matrix4 } from "three/webgpu";
 import { gpuTest, gpuFuzzTest, disposeRenderer } from "../src/index.ts";
 
 describe("gpu smoke tests", () => {
@@ -29,7 +30,7 @@ describe("gpu smoke tests", () => {
       gpuTest("too-many-components", ({ expectValue }) => {
         expectValue(float(1), [1, 2, 3, 4, 5]);
       }),
-    ).rejects.toThrow(/1-4 components/);
+    ).rejects.toThrow(/components, got 5/);
   });
 
   it("rejects tests without assertions", async () => {
@@ -127,7 +128,7 @@ describe("gpuFuzzTest", () => {
         test: (x) => x,
         expected: () => [1, 2, 3, 4, 5],
       }),
-    ).rejects.toThrow(/1-4 components/);
+    ).rejects.toThrow(/components, got 5/);
   });
 
   it("accepts 1-component array as scalar (broadcast)", async () => {
@@ -148,5 +149,143 @@ describe("gpuFuzzTest", () => {
         expected: (x) => (x === 5 ? 999 : x * 10), // only instance 5 is wrong
       }),
     ).rejects.toThrow(/instance 5 \(input 5\.0\)/);
+  });
+});
+
+describe("stage-2: type resolution, matrices, relational assertions", () => {
+  afterAll(async () => {
+    await disposeRenderer();
+  });
+
+  it("relational assertions pass", async () => {
+    await gpuTest(
+      "relations-pass",
+      ({ greaterThan, greaterThanOrEqual, lessThan, lessThanOrEqual }) => {
+        greaterThan(float(5), float(3));
+        greaterThanOrEqual(float(3), float(3));
+        lessThan(float(3), float(5));
+        lessThanOrEqual(float(3), float(3));
+      },
+    );
+  });
+
+  it("relational failure reports the operator and values", async () => {
+    await expect(
+      gpuTest("relations-fail", ({ lessThan }) => {
+        lessThan(float(5), float(3));
+      }),
+    ).rejects.toThrow(/expected < 3\.0, got 5\.0/);
+  });
+
+  it("eq is exact (rejects representable differences)", async () => {
+    await expect(
+      gpuTest("eq-exact", ({ eq }) => {
+        eq(float(1), float(1.000001)); // distinct in f32
+      }),
+    ).rejects.toThrow(/expected 1\.0000009536743164, got 1\.0/);
+  });
+
+  it("eq accepts exactly equal values", async () => {
+    await gpuTest("eq-ok", ({ eq }) => {
+      eq(float(2).mul(3), float(6));
+    });
+  });
+
+  it("mat4 rotation matches CPU reference", async () => {
+    const angle = Math.PI / 3;
+    const c = Math.cos(angle);
+    const s = Math.sin(angle);
+    await gpuTest(
+      "mat4-rotation",
+      ({ expectValue }) => {
+        expectValue(
+          mat4(c, s, 0, 0, -s, c, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1),
+          [c, s, 0, 0, -s, c, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1],
+          1e-6,
+        );
+      },
+      { maxAssertions: 8 }, // one mat4 assertion needs a 4-row stride
+    );
+  });
+
+  it("mat4 times vector rotates correctly", async () => {
+    // NOTE: do NOT compare raw mat4 elements against Matrix4.elements here —
+    // TSL's mat4(Matrix4) conversion transposes relative to three's
+    // column-major element order on r0.185. Verify behaviour via transforms.
+    const angle = Math.PI / 2;
+    const rot = mat4(new Matrix4().makeRotationZ(angle));
+    const c = Math.cos(angle); // ~6.12e-17 in f64
+    await gpuTest(
+      "mat4-transform",
+      ({ expectClose }) => {
+        expectClose(rot.mul(vec4(1, 0, 0, 1)), vec4(c, 1, 0, 1), 1e-6);
+        expectClose(rot.mul(vec4(0, 1, 0, 1)), vec4(-1, c, 0, 1), 1e-6);
+      },
+      { maxAssertions: 8 },
+    );
+  });
+
+  it("mixed scalar + vector + matrix assertions coexist", async () => {
+    await gpuTest(
+      "mixed",
+      ({ eq, expectClose, expectValue }) => {
+        eq(float(2).add(2), float(4));
+        expectClose(vec3(1, 2, 3).mul(2), vec3(2, 4, 6));
+        expectValue(
+          mat4(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1),
+          [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1],
+        );
+      },
+      { maxAssertions: 16 },
+    );
+  });
+
+  it("type mismatch throws a clear error", async () => {
+    await expect(
+      gpuTest("type-mismatch", ({ eq }) => {
+        eq(float(1), vec3(1, 2, 3));
+      }),
+    ).rejects.toThrow(/type mismatch.*"float".*"vec3"/s);
+  });
+});
+
+describe("stage-2 regression: legacy tolerance semantics", () => {
+  afterAll(async () => {
+    await disposeRenderer();
+  });
+
+  it("expectClose keeps the stage-1 floor-of-1 relative formula", async () => {
+    // diff = 5e-7; legacy: 5e-7 <= 1e-6 * max(1, 0.1) = 1e-6 -> pass
+    // (standard closeRel would require 5e-7 <= 1e-6 * 0.1 = 1e-7 -> fail)
+    await gpuTest("legacy-tolerance-pass", ({ expectClose }) => {
+      expectClose(float(0.1000005), float(0.1), 1e-6);
+    });
+    // diff = 5e-6; legacy: 5e-6 > 1e-6 -> fail
+    await expect(
+      gpuTest("legacy-tolerance-fail", ({ expectClose }) => {
+        expectClose(float(0.100005), float(0.1), 1e-6);
+      }),
+    ).rejects.toThrow(/tolerance/);
+  });
+
+  it("expectValue keeps the stage-1 floor-of-1 relative formula", async () => {
+    await gpuTest("legacy-expectValue", ({ expectValue }) => {
+      expectValue(float(0.1000005), 0.1, 1e-6);
+    });
+  });
+
+  it("new closeRel uses the standard relative formula", async () => {
+    // diff = 5e-7 > 1e-6 * max(|a|,|e|) ~ 1e-7 -> must fail
+    await expect(
+      gpuTest("closeRel-standard", ({ closeRel }) => {
+        closeRel(float(0.1000005), float(0.1), 1e-6);
+      }),
+    ).rejects.toThrow(/tolerance/);
+  });
+
+  it("rejects invalid maxAssertions", async () => {
+    await expect(
+      gpuTest("bad-max", ({ eq }) => eq(float(1), float(1)), { maxAssertions: 0 }),
+    ).rejects.toThrow(/positive integer/);
   });
 });
