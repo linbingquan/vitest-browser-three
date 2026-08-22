@@ -20,16 +20,19 @@ import { readStorage } from "./readback.ts";
 export type ExpectedValue = Node | number | number[] | TypedArray;
 
 export interface GPUAssert {
-  /** Assert `actual` strictly equals `expected`, component-wise. */
+  /** Assert `actual` strictly equals `expected` component-wise; NaN never equals anything, including itself. */
   eq: (actual: Node, expected: Node, message?: string) => void;
-  /** Assert `actual` is within `tolerance` (absolute) of `expected` (TSL node or CPU constant). */
+  /** Assert `actual` is within `tolerance` (absolute) of `expected` component-wise: |a - e| <= tolerance. */
   closeAbs: (actual: Node, expected: ExpectedValue, tolerance?: number, message?: string) => void;
-  /** Assert `actual` is within `tolerance` (relative) of `expected` (TSL node or CPU constant). */
+  /** Assert `actual` is within `tolerance` (relative) of `expected` component-wise: |a - e| <= tolerance * max(|a|, |e|, 1e-12). */
   closeRel: (actual: Node, expected: ExpectedValue, tolerance?: number, message?: string) => void;
-  /** Component-wise relational assertions. */
+  /** Assert each component of `actual` is greater than the corresponding component of `expected`. */
   greaterThan: (actual: Node, expected: Node, message?: string) => void;
+  /** Assert each component of `actual` is greater than or equal to the corresponding component of `expected`. */
   greaterThanOrEqual: (actual: Node, expected: Node, message?: string) => void;
+  /** Assert each component of `actual` is less than the corresponding component of `expected`. */
   lessThan: (actual: Node, expected: Node, message?: string) => void;
+  /** Assert each component of `actual` is less than or equal to the corresponding component of `expected`. */
   lessThanOrEqual: (actual: Node, expected: Node, message?: string) => void;
 }
 
