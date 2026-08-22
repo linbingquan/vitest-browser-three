@@ -70,8 +70,12 @@ async function runFuzzBackend(name: string, spec: FuzzSpec, backend: BackendName
   const expectedValues = new Float32Array(instances * 4);
   for (let i = 0; i < instances; i++) {
     const x = input(i);
-    inputValues[i] = x;
-    const [a, b, c, d] = padExpected(expected(x, i));
+    // Round-trip through f32 first: this is the value the GPU actually
+    // receives via the storage buffer, so the CPU reference must be
+    // computed from it too (matters near fract/step thresholds).
+    const xF32 = Math.fround(x);
+    inputValues[i] = xF32;
+    const [a, b, c, d] = padExpected(expected(xF32, i));
     expectedValues.set([a, b, c, d], i * 4);
   }
 

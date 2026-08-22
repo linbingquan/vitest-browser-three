@@ -60,6 +60,25 @@
 - **Decision**: AssertionNode normalizes `"color"` to `"vec3"` before type
   comparison, so `closeRel(colorNode, [r, g, b])` works directly.
 
+### fp32/f64 divergence at discontinuities (fuzz reference values)
+
+- **Finding**: fuzz inputs are rounded to f32 for the GPU upload, but the CPU
+  reference was computed from the f64 value. Near `fract`/`step` thresholds
+  the two can land on opposite sides of a discontinuity and fail even though
+  both are "correct".
+- **Decision**: (1) `expected(x, i)` receives the f32-rounded input
+  (`Math.fround`), matching what the GPU actually gets; (2) fuzz sweeps use
+  half-step sampling (`(i + 0.5) / n`) so inputs never land exactly on
+  discontinuities; (3) CPU references must compare against f32-rounded
+  constants (`Math.fround(0.15)`, not `0.15`) when mirroring shader literals.
+
+### Real-world snippet coverage
+
+- Current snippets: band shading (Fn/step/abs/mix/color), animated
+  edge-distorted stripes (uv/time/distance/fract/negate), If/Else
+  conditional color selection, and stylized rim-lit shading
+  (normalize/dot/max/pow/smoothstep/clamp with a three-vec3 Fn).
+
 ## Dependency strategy
 
 - `three` 与 `vitest` / `@vitest/*` 一律 external，绝不内联（曾因
