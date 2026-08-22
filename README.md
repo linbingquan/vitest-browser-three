@@ -155,6 +155,9 @@ This library's design follows three.js PR
   to it or providing a compatibility layer. Watch for new commits touching
   `test/unit/addons/tsl/gpu-test-utils.js` in three.js.
 
+Full alignment decisions and platform findings are recorded in
+[docs/DECISIONS.md](./docs/DECISIONS.md).
+
 ## Development
 
 ```bash
