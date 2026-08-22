@@ -1,16 +1,26 @@
 {
   "name": "vitest-browser-three",
-  "version": "0.0.0",
-  "description": "A starter for creating a TypeScript package.",
-  "homepage": "https://github.com/author/library#readme",
+  "version": "0.0.1",
+  "description": "GPU-native assertions for three.js TSL expressions in Vitest Browser Mode.",
+  "keywords": [
+    "gpu",
+    "shader",
+    "testing",
+    "three",
+    "threejs",
+    "tsl",
+    "vitest",
+    "webgpu"
+  ],
+  "homepage": "https://github.com/your-name/vitest-browser-three#readme",
   "bugs": {
-    "url": "https://github.com/author/library/issues"
+    "url": "https://github.com/your-name/vitest-browser-three/issues"
   },
   "license": "MIT",
-  "author": "Author Name <author.name@mail.com>",
+  "author": "Your Name <your.name@mail.com>",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/author/library.git"
+    "url": "git+https://github.com/your-name/vitest-browser-three.git"
   },
   "files": [
     "dist"
