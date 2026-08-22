@@ -97,6 +97,21 @@ Acceptance criteria for new snippets: they must cover compilation modes not
 yet exercised, and geometry/render-context nodes (positionLocal, uv, time)
 must be refactored into explicit parameters.
 
+## Plugin & fixture extensibility
+
+- The current assertion set (eq/closeAbs/closeRel/relational) is closed and
+  sufficient for the initial release.
+- A future plugin system for custom comparison kinds is feasible without any
+  GPU-side changes: all comparisons happen on the CPU after readback, so it
+  reduces to converting `compareComponents`/`describeFailure` into a
+  registry (light-to-medium effort).
+- A Vitest fixture extension (`test.extend()`) is feasible by wrapping
+  `gpuTest` into a harness factory (`createGpuHarness()` returning
+  assert/run/dispose); the renderer singleton can be made injectable if a
+  fixture needs isolated instances (medium effort).
+- Neither extension forces a breaking change of the existing `gpuTest`
+  signature, so no groundwork is needed now.
+
 ## Multi-backend strategy
 
 - Suites default to both backends: `['webgpu', 'webgl']` (the latter is

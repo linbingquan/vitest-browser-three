@@ -83,6 +83,18 @@ instanceIndex 寻址、AssertWriteNode 式类型解析），不依赖深度耦�
 新片段的收录标准：必须覆盖尚未测试的编译模式；几何/渲染上下文节点
 （positionLocal、uv、time）必须重构为显式参数。
 
+## 插件与 fixture 扩展性
+
+- 当前断言集（eq/closeAbs/closeRel/关系断言）是封闭的，对首次发布而言已
+  足够。
+- 自定义比较 kind 的插件系统未来可行且无需 GPU 侧改动：所有比较都在回读
+  后的 CPU 侧完成，改造成本仅是将 `compareComponents`/`describeFailure`
+  改为注册表（轻到中）。
+- Vitest fixture 扩展（`test.extend()`）可行：将 `gpuTest` 包装为 harness
+  工厂（返回 assert/run/dispose）；如 fixture 需要隔离实例，渲染器单例可
+  改为可注入（中等成本）。
+- 两者均不强制破坏现有 `gpuTest` 签名——无需发布前铺垫。
+
 ## 多后端策略
 
 - 套件默认跑双后端：`['webgpu', 'webgl']`（后者是 `forceWebGL: true` 的
