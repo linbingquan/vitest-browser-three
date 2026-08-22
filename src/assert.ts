@@ -119,11 +119,32 @@ export function cpuToNode(value: number | number[] | TypedArray): Node {
     case 4:
       return vec4(...arr);
     case 9:
-      const [n0, n1, n2, n3, n4, n5, n6, n7, n8] = arr;
-      return mat3(n0, n1, n2, n3, n4, n5, n6, n7, n8);
+      // arr is length-checked above; the tuple assertion preserves the
+      // current (TSL/GLSL column-major) argument order exactly.
+      return mat3(
+        ...(arr as [number, number, number, number, number, number, number, number, number]),
+      );
     case 16:
-      const [m0, m1, m2, m3, m4, m5, m6, m7, m8, m9, m10, m11, m12, m13, m14, m15] = arr;
-      return mat4(m0, m1, m2, m3, m4, m5, m6, m7, m8, m9, m10, m11, m12, m13, m14, m15);
+      return mat4(
+        ...(arr as [
+          number,
+          number,
+          number,
+          number,
+          number,
+          number,
+          number,
+          number,
+          number,
+          number,
+          number,
+          number,
+          number,
+          number,
+          number,
+          number,
+        ]),
+      );
     default:
       throw new Error(
         `[vitest-browser-three] expected value must have 1-4 (vector) or 9/16 (matrix) components, got ${arr.length}`,
