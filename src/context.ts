@@ -19,6 +19,7 @@ const renderers: Record<BackendName, BackendEntry> = {
   webgl: {},
 };
 
+/** @internal Exported for library-internal use (e.g. src/setup.ts); not part of the public API. */
 export function getRenderer(backend: BackendName = "webgpu"): Promise<WebGPURenderer> {
   const entry = renderers[backend];
   if (!entry.promise && !entry.failed) {
