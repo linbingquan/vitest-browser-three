@@ -131,10 +131,16 @@ must be refactored into explicit parameters.
   the setup subpath imports vitest at runtime, so consumers must have vitest
   installed directly.
 
-## API cleanup
+## Tolerance semantics
 
-- Before first publish, removed legacy aliases `expectClose` / `expect` and
-  the floor-1 tolerance formula (`legacyCloseRel`); relative tolerance is
-  standardized to `|a-e| <= tol * max(|a|, |e|, 1e-12)`.
-- `expectValue` was also removed; CPU constants can be passed directly to
-  `closeAbs` / `closeRel` (converted internally via `cpuToNode()`).
+- `closeRel` uses the standard relative formula
+  `|a - e| <= tolerance * max(|a|, |e|, 1e-12)`.
+  This was chosen over the earlier floor-1 formula
+  (`tolerance * max(1, |e|)`) because it behaves consistently for values
+  smaller than 1: the floor-1 formula effectively became an absolute
+  tolerance for small inputs, which was surprising and harder to reason
+  about. The standard formula is also what most testing libraries use for
+  relative comparisons.
+- `closeAbs` remains available for explicit absolute tolerance.
+- CPU constants can be passed directly to `closeAbs` / `closeRel`; they are
+  converted internally via `cpuToNode()`.
