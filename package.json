@@ -27,8 +27,14 @@
   ],
   "type": "module",
   "exports": {
-    ".": "./dist/index.mjs",
-    "./setup": "./dist/setup.mjs",
+    ".": {
+      "types": "./dist/index.d.mts",
+      "import": "./dist/index.mjs"
+    },
+    "./setup": {
+      "types": "./dist/setup.d.mts",
+      "import": "./dist/setup.mjs"
+    },
     "./package.json": "./package.json"
   },
   "publishConfig": {
