@@ -29,7 +29,7 @@ export const DEFAULT_TOLERANCE = 1e-6;
  * conversion, so padding/broadcast components always match — as long as
  * actual and expected have the same type.
  */
-function toVec4(node: Node): Node {
+export function toVec4(node: Node): Node {
   const n = node as unknown as { toVec4?: () => Node; type?: string };
   if (typeof n.toVec4 !== "function") {
     throw new Error(
@@ -101,8 +101,12 @@ export async function gpuTest(name: string, fn: (assert: GPUAssert) => void): Pr
 
   const renderer = await getRenderer();
 
-  // One compute pass per assertion: simple and correct. Batching into a
-  // single pass is only worth it for fuzz-style loops over shared expressions.
+  // One compute pass per assertion, addressed by a compile-time constant.
+  // NOTE: bare instanceIndex addressing would let the WebGL2 transform-feedback
+  // fallback work too, but each pass here dispatches exactly one invocation
+  // (instanceIndex is always 0), so rows must be selected by constant index.
+  // WebGL2 fallback is therefore not supported yet; revisit indexing together
+  // with a batched single-dispatch design (see three.js PR #34331).
   for (const row of rows) {
     const i = row.index - 1;
     const computeNode = Fn(() => {
