@@ -1,15 +1,6 @@
 # 设计决策与平台发现（中文译本）
 
-> **中文译本**
->
-> 本文档是 [`DECISIONS.md`](./DECISIONS.md) 的完整中文翻译。
-> **英文版为唯一事实依据**；若译文与英文版存在出入，以英文版为准。
-> 本文档与英文版在同一提交中更新。
->
-> This is the complete Chinese translation of [`DECISIONS.md`](./DECISIONS.md).
-> The English version is authoritative; in case of any discrepancy, the
-> English version prevails. Updated in the same commit as the English
-> version.
+> 英文原版：[`DECISIONS.md`](./DECISIONS.md)。本文为完整中文翻译，英文版为权威版本。
 
 > 集中记录开发过程中的重要决策与实测平台怪癖，避免重复调研。
 > 本项目目前为未发布单人项目，采用轻量级单一文档而非完整 ADR；若未来贡
