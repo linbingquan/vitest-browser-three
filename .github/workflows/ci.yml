@@ -1,0 +1,32 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      # Installs Vite+ (vp) globally, resolves the version from the project's
+      # lockfile, sets up Node.js LTS, caches dependencies, and runs vp install.
+      - uses: voidzero-dev/setup-vp@v1.17.0
+        with:
+          node-version: "lts"
+          cache: true
+          run-install: true
+
+      - name: Install Playwright chromium
+        run: vp exec -- playwright install chromium --with-deps
+
+      - name: Check (format + lint + typecheck)
+        run: vp check
+
+      - name: Test (browser mode, WebGPU + WebGL2)
+        run: vp test
+
+      - name: Build
+        run: vp run build

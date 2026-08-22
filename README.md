@@ -1,23 +1,153 @@
-# vite-plus-starter
+# vitest-browser-three
 
-A starter for creating a Vite Plus project.
+GPU-native assertions for [three.js](https://threejs.org) TSL expressions, running in
+[Vitest Browser Mode](https://vitest.dev/guide/browser/).
+
+Instead of mocking the GPU away, every assertion is compiled to a compute
+shader, executed on a real GPU (WebGPU, with a WebGL2 fallback path), and the
+results are read back and compared on the CPU — so failures report actual vs.
+expected values instead of a bare test id.
+
+## Install
+
+```bash
+# Using Vite+ (vp wraps pnpm):
+vp add three @types/three
+vp add -D @vitest/browser @vitest/browser-playwright playwright vitest
+
+# Equivalent with plain pnpm:
+pnpm add three @types/three
+pnpm add -D @vitest/browser @vitest/browser-playwright playwright vitest
+```
+
+Configure Vitest browser mode in `vite.config.ts`:
+
+```ts
+import { defineConfig } from "vite-plus";
+import { playwright } from "@vitest/browser-playwright";
+
+export default defineConfig({
+  test: {
+    browser: {
+      enabled: true,
+      headless: true,
+      provider: playwright({
+        launchOptions: {
+          args: ["--enable-unsafe-webgpu", "--enable-features=Vulkan", "--use-angle=swiftshader"],
+        },
+      }),
+      instances: [{ browser: "chromium" }],
+    },
+  },
+});
+```
+
+## Usage
+
+```ts
+import { Matrix4 } from "three/webgpu";
+import { gpuTest, gpuFuzzTest } from "vitest-browser-three";
+import { float, sin, vec3, vec4, mat4 } from "three/tsl";
+
+// Declarative assertions — one batched compute dispatch per suite.
+await gpuTest("vector math", ({ eq, closeAbs, greaterThan }) => {
+  eq(float(2).add(3), float(5));
+  closeAbs(sin(float(Math.PI / 2)), float(1), 1e-3);
+  greaterThan(vec3(5, 6, 7).length(), float(10));
+});
+
+// CPU-side reference values via expectValue / legacy aliases.
+await gpuTest("scalar math", ({ expectValue }) => {
+  expectValue(sin(float(Math.PI / 2)), 1);
+});
+
+// Fuzzing: deterministic inputs, one compute dispatch for all instances.
+await gpuFuzzTest("sin", {
+  instances: 128,
+  input: (i) => (i / 128) * Math.PI * 2,
+  test: (x) => sin(x),
+  expected: (x) => Math.sin(x),
+  tolerance: 1e-3, // SwiftShader fast-math sin has ~1e-5 relative error
+});
+```
+
+### Matrices
+
+```ts
+await gpuTest(
+  "rotation",
+  ({ expectClose }) => {
+    const angle = Math.PI / 2;
+    const rot = mat4(new Matrix4().makeRotationZ(angle));
+    expectClose(rot.mul(vec4(1, 0, 0, 1)), vec4(0, 1, 0, 1));
+  },
+  { maxAssertions: 8 }, // each matrix assertion occupies a 4-row stride
+);
+```
+
+### Multi-backend
+
+Suites run against both backends by default (`'webgpu'` and `'webgl'` — the
+latter is `WebGPURenderer` with `forceWebGL: true`). Unavailable backends are
+soft-skipped with a warning; the test only fails when no requested backend is
+available. Failures are tagged with `[backend: xxx]`.
+
+```ts
+await gpuTest("smoke", fn, { backends: ["webgpu", "webgl"] });
+configureGPU({ backends: ["webgpu"] }); // library-wide default
+
+const ok = await isBackendAvailable("webgl"); // manual probing
+```
+
+> Note: `configureGPU` mutates global state — prefer per-call `backends`
+> options when running test files in parallel.
+
+## Assertion semantics
+
+| Method                                                          | Comparison                                             |
+| --------------------------------------------------------------- | ------------------------------------------------------ |
+| `eq(a, b)`                                                      | exact component equality (`NaN !== NaN`)               |
+| `closeAbs(a, b, tol)`                                           | `\|a - e\| <= tol`                                     |
+| `closeRel(a, b, tol)`                                           | `\|a - e\| <= tol * max(\|a\|, \|b\|, 1e-12)`          |
+| `greaterThan / greaterThanOrEqual / lessThan / lessThanOrEqual` | component-wise relational                              |
+| `expectValue(a, cpuValue, tol?)`                                | legacy: relative tolerance with floor 1 (`tol * max(1, | expected | )`) |
+| `expectClose(a, b, tol?)` / `expect(a, b, tol?)`                | legacy aliases of the floor-1 formula                  |
+
+Supported value types: scalar, vecN, mat3, mat4. Type resolution happens at
+shader build time; mismatched types throw.
+
+## Known limitations & quirks (three r0.185)
+
+- Creating a storage node that is never used inside a kernel breaks backend
+  buffer registration for attributes that _are_ used.
+- WebGL2 storage buffers are effectively single-read; we read each buffer once
+  and share the arrays between the canary check and comparisons.
+- `TSL mat4(Matrix4)` transposes relative to `Matrix4.elements`.
+- SwiftShader's fast-math trig has ~1e-5 relative error — use tolerances of
+  1e-4 ~ 1e-3 for transcendental functions.
+
+## Upstream tracking
+
+This library's design follows three.js PR
+[#34331](https://github.com/mrdoob/three.js/pull/34331)
+(`gpu-test-utils.js`, prototype). Tracking strategy:
+
+- **We maintain our own implementation** and absorb upstream design ideas
+  (canary detection, bare-instanceIndex addressing, AssertWriteNode-style type
+  resolution) rather than depending on prototype code that is deeply coupled
+  to QUnit.
+- When/if the upstream graduates into an official API, re-evaluate switching
+  to it or providing a compatibility layer. Watch for new commits touching
+  `test/unit/addons/tsl/gpu-test-utils.js` in three.js.
 
 ## Development
 
-- Install dependencies:
-
 ```bash
-vp install
+vp check   # format + lint + typecheck
+vp test    # browser-mode tests (requires playwright chromium)
+vp run build
 ```
 
-- Run the unit tests:
+## License
 
-```bash
-vp test
-```
-
-- Build the library:
-
-```bash
-vp pack
-```
+MIT
