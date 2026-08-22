@@ -46,7 +46,8 @@
     "vitest": "^4.1.11"
   },
   "peerDependencies": {
-    "three": ">=0.185.0"
+    "three": ">=0.185.0",
+    "vitest": ">=4.0.0"
   },
   "devEngines": {
     "packageManager": {
@@ -54,11 +55,5 @@
       "version": "11.22.0",
       "onFail": "download"
     }
-  },
-  "inlinedDependencies": {
-    "@vitest/pretty-format": "4.1.11",
-    "@vitest/runner": "4.1.11",
-    "@vitest/utils": "4.1.11",
-    "tinyrainbow": "3.1.1"
   }
 }

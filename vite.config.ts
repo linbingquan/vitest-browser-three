@@ -25,7 +25,7 @@ export default defineConfig({
       tsgo: true,
     },
     exports: true,
-    external: ["three", "three/tsl", "three/webgpu"],
+    external: ["three", "three/tsl", "three/webgpu", /^vitest($|\/)/, /^@vitest\//],
   },
   fmt: {
     tabWidth: 2,
