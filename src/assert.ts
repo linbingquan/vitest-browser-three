@@ -1,8 +1,8 @@
 import type { Node } from "three/webgpu";
 import { StorageInstancedBufferAttribute, type TypedArray } from "three/webgpu";
 import { Fn, storage, uint, float, vec2, vec3, vec4 } from "three/tsl";
-import { getRenderer } from "./context.js";
-import { readStorage } from "./readback.js";
+import { getRenderer } from "./context.ts";
+import { readStorage } from "./readback.ts";
 
 export interface GPUAssert {
   /** Assert `actual` equals `expected` on the GPU, component-wise within `tolerance`. */

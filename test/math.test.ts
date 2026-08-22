@@ -1,6 +1,6 @@
 import { describe, it, afterAll, expect } from "vitest";
 import { float, sin, vec2, vec3, vec4 } from "three/tsl";
-import { gpuTest, disposeRenderer } from "../src/index.js";
+import { gpuTest, disposeRenderer } from "../src/index.ts";
 
 describe("gpu smoke tests", () => {
   afterAll(async () => {

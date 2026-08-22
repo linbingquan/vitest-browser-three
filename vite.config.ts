@@ -24,12 +24,17 @@ export default defineConfig({
       tsgo: true,
     },
     exports: true,
+    external: ["three", "three/tsl", "three/webgpu"],
+  },
+  fmt: {
+    tabWidth: 2,
+    semi: true,
+    singleQuote: false,
+    endOfLine: "lf",
+    ignorePatterns: ["dist", "node_modules"],
   },
   lint: {
-    options: {
-      typeAware: true,
-      typeCheck: true,
-    },
+    options: { typeAware: true, typeCheck: true },
+    ignorePatterns: ["dist", "node_modules"],
   },
-  fmt: {},
 });
