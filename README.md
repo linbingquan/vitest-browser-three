@@ -23,7 +23,7 @@ pnpm add -D @vitest/browser @vitest/browser-playwright playwright vitest
 Configure Vitest browser mode in `vite.config.ts`:
 
 ```ts
-import { defineConfig } from "vite-plus";
+import { defineConfig } from "vitest/config"; // or "vite-plus" if you use Vite+
 import { playwright } from "@vitest/browser-playwright";
 
 export default defineConfig({
@@ -56,9 +56,9 @@ await gpuTest("vector math", ({ eq, closeAbs, greaterThan }) => {
   greaterThan(vec3(5, 6, 7).length(), float(10));
 });
 
-// CPU-side reference values via expectValue / legacy aliases.
-await gpuTest("scalar math", ({ expectValue }) => {
-  expectValue(sin(float(Math.PI / 2)), 1);
+// CPU-side constants are accepted directly by the comparison methods.
+await gpuTest("scalar math", ({ closeRel }) => {
+  closeRel(sin(float(Math.PI / 2)), 1);
 });
 
 // Fuzzing: deterministic inputs, one compute dispatch for all instances.
@@ -76,10 +76,10 @@ await gpuFuzzTest("sin", {
 ```ts
 await gpuTest(
   "rotation",
-  ({ expectClose }) => {
+  ({ closeAbs }) => {
     const angle = Math.PI / 2;
     const rot = mat4(new Matrix4().makeRotationZ(angle));
-    expectClose(rot.mul(vec4(1, 0, 0, 1)), vec4(0, 1, 0, 1));
+    closeAbs(rot.mul(vec4(1, 0, 0, 1)), vec4(0, 1, 0, 1), 1e-6);
   },
   { maxAssertions: 8 }, // each matrix assertion occupies a 4-row stride
 );
@@ -93,7 +93,9 @@ soft-skipped with a warning; the test only fails when no requested backend is
 available. Failures are tagged with `[backend: xxx]`.
 
 ```ts
-await gpuTest("smoke", fn, { backends: ["webgpu", "webgl"] });
+await gpuTest("smoke", ({ eq }) => eq(float(2).add(3), float(5)), {
+  backends: ["webgpu", "webgl"],
+});
 configureGPU({ backends: ["webgpu"] }); // library-wide default
 
 const ok = await isBackendAvailable("webgl"); // manual probing
@@ -104,17 +106,30 @@ const ok = await isBackendAvailable("webgl"); // manual probing
 
 ## Assertion semantics
 
-| Method                                                          | Comparison                                             |
-| --------------------------------------------------------------- | ------------------------------------------------------ |
-| `eq(a, b)`                                                      | exact component equality (`NaN !== NaN`)               |
-| `closeAbs(a, b, tol)`                                           | `\|a - e\| <= tol`                                     |
-| `closeRel(a, b, tol)`                                           | `\|a - e\| <= tol * max(\|a\|, \|b\|, 1e-12)`          |
-| `greaterThan / greaterThanOrEqual / lessThan / lessThanOrEqual` | component-wise relational                              |
-| `expectValue(a, cpuValue, tol?)`                                | legacy: relative tolerance with floor 1 (`tol * max(1, | expected | )`) |
-| `expectClose(a, b, tol?)` / `expect(a, b, tol?)`                | legacy aliases of the floor-1 formula                  |
+| Method                                                          | Comparison                                    |
+| --------------------------------------------------------------- | --------------------------------------------- |
+| `eq(a, b)`                                                      | exact component equality (`NaN !== NaN`)      |
+| `closeAbs(a, b, tol)`                                           | `\|a - e\| <= tol`                            |
+| `closeRel(a, b, tol)`                                           | `\|a - e\| <= tol * max(\|a\|, \|b\|, 1e-12)` |
+| `greaterThan / greaterThanOrEqual / lessThan / lessThanOrEqual` | component-wise relational                     |
 
 Supported value types: scalar, vecN, mat3, mat4. Type resolution happens at
 shader build time; mismatched types throw.
+
+`closeAbs` and `closeRel` accept either a TSL node or a CPU-side constant
+(`number`, `number[]`, `TypedArray`) as `expected`.
+
+### Cleanup
+
+You can dispose the shared renderer manually (`afterAll(disposeRenderer)`) or
+use the automatic cleanup below — pick one; using both is harmless but
+redundant:
+
+```ts
+test: {
+  setupFiles: ["vitest-browser-three/setup"];
+}
+```
 
 ## Known limitations & quirks (three r0.185)
 

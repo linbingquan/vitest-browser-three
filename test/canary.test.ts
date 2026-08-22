@@ -9,8 +9,8 @@ import { gpuTest, disposeRenderer } from "../src/index.ts";
 // as 0-vs-0.
 it("canary detects kernels that never ran (NaN literal build failure)", async () => {
   await expect(
-    gpuTest("nan-literal", ({ expectClose }) => {
-      expectClose(float(Number.NaN).add(1), float(1));
+    gpuTest("nan-literal", ({ closeRel }) => {
+      closeRel(float(Number.NaN).add(1), float(1));
     }),
   ).rejects.toThrow(/compute kernel never ran.*canary value missing/s);
 });

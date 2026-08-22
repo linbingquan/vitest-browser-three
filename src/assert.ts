@@ -16,36 +16,27 @@ import { getRenderer, isBackendAvailable, type BackendName } from "./context.ts"
 import { getDefaultBackends } from "./config.ts";
 import { readStorage } from "./readback.ts";
 
+/** Anything an assertion can compare against: a TSL node or a CPU-side constant. */
+export type ExpectedValue = Node | number | number[] | TypedArray;
+
 export interface GPUAssert {
   /** Assert `actual` strictly equals `expected`, component-wise. */
   eq: (actual: Node, expected: Node, message?: string) => void;
-  /** Assert `actual` is within `tolerance` (absolute) of `expected`. */
-  closeAbs: (actual: Node, expected: Node, tolerance?: number, message?: string) => void;
-  /** Assert `actual` is within `tolerance` (relative) of `expected`. */
-  closeRel: (actual: Node, expected: Node, tolerance?: number, message?: string) => void;
+  /** Assert `actual` is within `tolerance` (absolute) of `expected` (TSL node or CPU constant). */
+  closeAbs: (actual: Node, expected: ExpectedValue, tolerance?: number, message?: string) => void;
+  /** Assert `actual` is within `tolerance` (relative) of `expected` (TSL node or CPU constant). */
+  closeRel: (actual: Node, expected: ExpectedValue, tolerance?: number, message?: string) => void;
   /** Component-wise relational assertions. */
   greaterThan: (actual: Node, expected: Node, message?: string) => void;
   greaterThanOrEqual: (actual: Node, expected: Node, message?: string) => void;
   lessThan: (actual: Node, expected: Node, message?: string) => void;
   lessThanOrEqual: (actual: Node, expected: Node, message?: string) => void;
-  /** Assert `actual` is within `tolerance` (legacy relative, floor 1: `|a-e| <= tol * max(1, |expected|)`) of a CPU-side constant value. */
-  expectValue: (
-    actual: Node,
-    expected: number | number[] | TypedArray,
-    tolerance?: number,
-    message?: string,
-  ) => void;
-  /** Legacy alias with legacy relative tolerance: `|a-e| <= tol * max(1, |expected|)`. */
-  expectClose: (actual: Node, expected: Node, tolerance?: number) => void;
-  /** Legacy alias with legacy relative tolerance: `|a-e| <= tol * max(1, |expected|)`. */
-  expect: (actual: Node, expected: Node, tolerance?: number) => void;
 }
 
 type AssertionKind =
   | "eq"
   | "closeAbs"
   | "closeRel"
-  | "legacyCloseRel"
   | "greaterThan"
   | "greaterThanOrEqual"
   | "lessThan"
@@ -86,6 +77,10 @@ export function toVec4(node: Node): Node {
     );
   }
   return n.toVec4();
+}
+
+function isNode(value: unknown): value is Node {
+  return (value as { isNode?: boolean }).isNode === true;
 }
 
 function formatFloat(n: number): string {
@@ -158,12 +153,6 @@ function compareComponents(
         break;
       case "closeRel":
         ok = Math.abs(a - e) <= tolerance * Math.max(Math.abs(a), Math.abs(e), 1e-12);
-        break;
-      case "legacyCloseRel":
-        // Stage-1 formula kept for backwards compatibility: the tolerance is
-        // scaled by max(1, |expected|), so it behaves like an absolute
-        // tolerance for small values.
-        ok = Math.abs(a - e) <= tolerance * Math.max(1, Math.abs(e));
         break;
       case "greaterThan":
         ok = a > e;
@@ -383,17 +372,14 @@ async function runBackend(
 
   const assertAPI: GPUAssert = {
     eq: (a, e, msg) => makeAssertion("eq", 0, msg)(a, e),
-    closeAbs: (a, e, tol = DEFAULT_TOLERANCE, msg) => makeAssertion("closeAbs", tol, msg)(a, e),
-    closeRel: (a, e, tol = DEFAULT_TOLERANCE, msg) => makeAssertion("closeRel", tol, msg)(a, e),
+    closeAbs: (a, e, tol = DEFAULT_TOLERANCE, msg) =>
+      makeAssertion("closeAbs", tol, msg)(a, isNode(e) ? e : cpuToNode(e as never)),
+    closeRel: (a, e, tol = DEFAULT_TOLERANCE, msg) =>
+      makeAssertion("closeRel", tol, msg)(a, isNode(e) ? e : cpuToNode(e as never)),
     greaterThan: (a, e, msg) => makeAssertion("greaterThan", 0, msg)(a, e),
     greaterThanOrEqual: (a, e, msg) => makeAssertion("greaterThanOrEqual", 0, msg)(a, e),
     lessThan: (a, e, msg) => makeAssertion("lessThan", 0, msg)(a, e),
     lessThanOrEqual: (a, e, msg) => makeAssertion("lessThanOrEqual", 0, msg)(a, e),
-    // Legacy stage-1 aliases, kept for backwards compatibility.
-    expectClose: (a, e, tol = DEFAULT_TOLERANCE) => makeAssertion("legacyCloseRel", tol)(a, e),
-    expect: (a, e, tol = DEFAULT_TOLERANCE) => makeAssertion("legacyCloseRel", tol)(a, e),
-    expectValue: (actual, expected, tolerance = DEFAULT_TOLERANCE, msg) =>
-      makeAssertion("legacyCloseRel", tolerance, msg)(actual, cpuToNode(expected)),
   };
 
   const kernel = Fn(() => {

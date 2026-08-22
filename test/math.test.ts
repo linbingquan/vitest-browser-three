@@ -9,26 +9,26 @@ describe("gpu smoke tests", () => {
   });
 
   it("scalar math", async () => {
-    await gpuTest("scalar", ({ expectValue }) => {
-      expectValue(sin(float(Math.PI / 2)), 1);
-      expectValue(float(2).add(3), 5);
+    await gpuTest("scalar", ({ closeRel }) => {
+      closeRel(sin(float(Math.PI / 2)), 1);
+      closeRel(float(2).add(3), 5);
     });
   });
 
   it("vector ops vs CPU reference", async () => {
     const v = vec3(1, 2, 3);
-    await gpuTest("vector", ({ expectClose, expectValue }) => {
-      expectClose(v.mul(2), vec3(2, 4, 6));
-      expectValue(v.add(vec3(0.5, 0.5, 0.5)), [1.5, 2.5, 3.5]);
-      expectClose(vec4(v, 1), vec4(1, 2, 3, 1));
-      expectClose(vec2(3, 4).length(), float(5));
+    await gpuTest("vector", ({ closeRel }) => {
+      closeRel(v.mul(2), vec3(2, 4, 6));
+      closeRel(v.add(vec3(0.5, 0.5, 0.5)), [1.5, 2.5, 3.5]);
+      closeRel(vec4(v, 1), vec4(1, 2, 3, 1));
+      closeRel(vec2(3, 4).length(), float(5));
     });
   });
 
-  it("rejects more than 4 components in expectValue", async () => {
+  it("rejects more than 4 components in CPU constants", async () => {
     await expect(
-      gpuTest("too-many-components", ({ expectValue }) => {
-        expectValue(float(1), [1, 2, 3, 4, 5]);
+      gpuTest("too-many-components", ({ closeRel }) => {
+        closeRel(float(1), [1, 2, 3, 4, 5]);
       }),
     ).rejects.toThrow(/components, got 5/);
   });
@@ -39,34 +39,34 @@ describe("gpu smoke tests", () => {
 
   it("fails with a dump when values mismatch", async () => {
     await expect(
-      gpuTest("mismatch", ({ expectClose }) => {
-        expectClose(float(1), float(2), 1e-6);
+      gpuTest("mismatch", ({ closeRel }) => {
+        closeRel(float(1), float(2), 1e-6);
       }),
     ).rejects.toThrow(/actual.*expected/s);
   });
 
   it("multi-assertion: reports the exact failing assertion index", async () => {
     await expect(
-      gpuTest("multi-row-addressing", ({ expectClose }) => {
-        expectClose(float(1), float(1)); // #1 correct
-        expectClose(float(2), float(3)); // #2 deliberately wrong
-        expectClose(float(4), float(4)); // #3 correct
+      gpuTest("multi-row-addressing", ({ closeRel }) => {
+        closeRel(float(1), float(1)); // #1 correct
+        closeRel(float(2), float(3)); // #2 deliberately wrong
+        closeRel(float(4), float(4)); // #3 correct
       }),
     ).rejects.toThrow(/assertion #2/);
   });
 
   it("tolerance boundary: within tolerance passes", async () => {
-    await gpuTest("tolerance-pass", ({ expectClose }) => {
-      // |1 - 1.0000005| = 5e-7 <= 1e-6 * max(1, 1)
-      expectClose(float(1.0000005), float(1), 1e-6);
+    await gpuTest("tolerance-pass", ({ closeRel }) => {
+      // |1 - 1.0000005| ~ 5e-7 <= 1e-6 * max(1.0000005, 1) ~ 1.0000005e-6
+      closeRel(float(1.0000005), float(1), 1e-6);
     });
   });
 
   it("tolerance boundary: beyond tolerance fails", async () => {
     await expect(
-      gpuTest("tolerance-fail", ({ expectClose }) => {
+      gpuTest("tolerance-fail", ({ closeRel }) => {
         // |1 - 1.001| relative: 1e-3 > 1e-6 * 1
-        expectClose(float(1.001), float(1), 1e-6);
+        closeRel(float(1.001), float(1), 1e-6);
       }),
     ).rejects.toThrow(/tolerance/);
   });
@@ -197,8 +197,8 @@ describe("stage-2: type resolution, matrices, relational assertions", () => {
     const s = Math.sin(angle);
     await gpuTest(
       "mat4-rotation",
-      ({ expectValue }) => {
-        expectValue(
+      ({ closeRel }) => {
+        closeRel(
           mat4(c, s, 0, 0, -s, c, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1),
           [c, s, 0, 0, -s, c, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1],
           1e-6,
@@ -217,9 +217,9 @@ describe("stage-2: type resolution, matrices, relational assertions", () => {
     const c = Math.cos(angle); // ~6.12e-17 in f64
     await gpuTest(
       "mat4-transform",
-      ({ expectClose }) => {
-        expectClose(rot.mul(vec4(1, 0, 0, 1)), vec4(c, 1, 0, 1), 1e-6);
-        expectClose(rot.mul(vec4(0, 1, 0, 1)), vec4(-1, c, 0, 1), 1e-6);
+      ({ closeRel }) => {
+        closeRel(rot.mul(vec4(1, 0, 0, 1)), vec4(c, 1, 0, 1), 1e-6);
+        closeRel(rot.mul(vec4(0, 1, 0, 1)), vec4(-1, c, 0, 1), 1e-6);
       },
       { maxAssertions: 8 },
     );
@@ -228,10 +228,10 @@ describe("stage-2: type resolution, matrices, relational assertions", () => {
   it("mixed scalar + vector + matrix assertions coexist", async () => {
     await gpuTest(
       "mixed",
-      ({ eq, expectClose, expectValue }) => {
+      ({ eq, closeRel }) => {
         eq(float(2).add(2), float(4));
-        expectClose(vec3(1, 2, 3).mul(2), vec3(2, 4, 6));
-        expectValue(
+        closeRel(vec3(1, 2, 3).mul(2), vec3(2, 4, 6));
+        closeRel(
           mat4(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1),
           [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1],
         );
@@ -249,36 +249,24 @@ describe("stage-2: type resolution, matrices, relational assertions", () => {
   });
 });
 
-describe("stage-2 regression: legacy tolerance semantics", () => {
+describe("standard relative tolerance semantics", () => {
   afterAll(async () => {
     await disposeRenderer();
   });
 
-  it("expectClose keeps the stage-1 floor-of-1 relative formula", async () => {
-    // diff = 5e-7; legacy: 5e-7 <= 1e-6 * max(1, 0.1) = 1e-6 -> pass
-    // (standard closeRel would require 5e-7 <= 1e-6 * 0.1 = 1e-7 -> fail)
-    await gpuTest("legacy-tolerance-pass", ({ expectClose }) => {
-      expectClose(float(0.1000005), float(0.1), 1e-6);
-    });
-    // diff = 5e-6; legacy: 5e-6 > 1e-6 -> fail
+  it("closeRel is strict for small expected values", async () => {
+    // diff = 5e-7 > 1e-6 * max(|a|,|e|) ~ 1e-7 -> must fail
     await expect(
-      gpuTest("legacy-tolerance-fail", ({ expectClose }) => {
-        expectClose(float(0.100005), float(0.1), 1e-6);
+      gpuTest("closeRel-small-values", ({ closeRel }) => {
+        closeRel(float(0.1000005), float(0.1), 1e-6);
       }),
     ).rejects.toThrow(/tolerance/);
   });
 
-  it("expectValue keeps the stage-1 floor-of-1 relative formula", async () => {
-    await gpuTest("legacy-expectValue", ({ expectValue }) => {
-      expectValue(float(0.1000005), 0.1, 1e-6);
-    });
-  });
-
-  it("new closeRel uses the standard relative formula", async () => {
-    // diff = 5e-7 > 1e-6 * max(|a|,|e|) ~ 1e-7 -> must fail
+  it("closeRel uses the standard relative formula for CPU constants", async () => {
     await expect(
-      gpuTest("closeRel-standard", ({ closeRel }) => {
-        closeRel(float(0.1000005), float(0.1), 1e-6);
+      gpuTest("expectValue-small-values", ({ closeRel }) => {
+        closeRel(float(0.1000005), 0.1, 1e-6);
       }),
     ).rejects.toThrow(/tolerance/);
   });

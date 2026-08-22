@@ -20,6 +20,7 @@ export default defineConfig({
     "*": "vp check --fix",
   },
   pack: {
+    entry: ["src/index.ts", "src/setup.ts"],
     dts: {
       tsgo: true,
     },
