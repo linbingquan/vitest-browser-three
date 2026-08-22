@@ -1,6 +1,6 @@
 import type { Node } from "three/webgpu";
 import { StorageInstancedBufferAttribute, type TypedArray } from "three/webgpu";
-import { Fn, storage, uint, float, vec2, vec3, vec4 } from "three/tsl";
+import { Fn, If, storage, instanceIndex, float, vec2, vec3, vec4 } from "three/tsl";
 import { getRenderer } from "./context.ts";
 import { readStorage } from "./readback.ts";
 
@@ -22,6 +22,26 @@ interface AssertionRow {
 }
 
 export const DEFAULT_TOLERANCE = 1e-6;
+
+/** Force evaluation of a TSL expression into a variable (node.toVar()). */
+function toVar(node: Node): Node {
+  const n = node as unknown as { toVar?: () => Node };
+  if (typeof n.toVar !== "function") {
+    throw new Error(
+      `[vitest-browser-three] Unsupported node for GPU assertion: node has no toVar() method (got ${node.constructor?.name ?? typeof node}).`,
+    );
+  }
+  return n.toVar();
+}
+
+// Written unconditionally into a reserved row of the actual buffer. If the
+// kernel fails to build (e.g. a NaN literal reaching generated WGSL),
+// computeAsync may not reject at all — it just reports asynchronously — and
+// every buffer reads back zero-initialized, so all assertions would silently
+// compare 0 against 0 and pass. The canary's absence proves the dispatch
+// never ran and lets us fail loudly instead (same strategy as three.js
+// PR #34331's gpu-test-utils).
+const CANARY_VALUE = 12345.6789;
 
 /**
  * Convert any scalar/vector TSL node to vec4 so every assertion occupies one
@@ -48,11 +68,15 @@ function formatRow(name: string, data: Float32Array): string {
 }
 
 /**
- * Run TSL assertions on the GPU via compute shaders.
+ * Run TSL assertions on the GPU via a single batched compute dispatch.
  *
- * Each `expect*()` call inside `fn` becomes one assertion row. The rows are
- * executed as compute passes on a shared renderer, results are read back to
- * the CPU and compared with relative tolerance.
+ * Each `expect*()` call inside `fn` becomes one assertion row; one extra row
+ * is reserved for a canary that detects kernels which never ran (see
+ * CANARY_VALUE). All rows are written via bare `instanceIndex` addressing
+ * guarded by `If(instanceIndex.equal(row), ...)` — the only write pattern the
+ * WebGL2 transform-feedback fallback supports — so a single dispatch serves
+ * both backends. Results are read back once and compared with relative
+ * tolerance on the CPU.
  *
  * Note: the callback runs synchronously (TSL graph building is sync); only
  * execution and readback are async.
@@ -93,31 +117,55 @@ export async function gpuTest(name: string, fn: (assert: GPUAssert) => void): Pr
     throw new Error(`gpuTest "${name}" contains no assertions.`);
   }
 
-  const count = rows.length;
-  const actualAttr = new StorageInstancedBufferAttribute(new Float32Array(count * 4), 4);
-  const expectedAttr = new StorageInstancedBufferAttribute(new Float32Array(count * 4), 4);
-  const actualStorage = storage(actualAttr, "vec4", count);
-  const expectedStorage = storage(expectedAttr, "vec4", count);
+  // One row per assertion plus one reserved canary row.
+  const rowCount = rows.length + 1;
+  const canaryRow = rowCount - 1;
+  const actualAttr = new StorageInstancedBufferAttribute(new Float32Array(rowCount * 4), 4);
+  const expectedAttr = new StorageInstancedBufferAttribute(new Float32Array(rowCount * 4), 4);
+  const actualStorage = storage(actualAttr, "vec4", rowCount);
+  const expectedStorage = storage(expectedAttr, "vec4", rowCount);
 
   const renderer = await getRenderer();
 
-  // One compute pass per assertion, addressed by a compile-time constant.
-  // NOTE: bare instanceIndex addressing would let the WebGL2 transform-feedback
-  // fallback work too, but each pass here dispatches exactly one invocation
-  // (instanceIndex is always 0), so rows must be selected by constant index.
-  // WebGL2 fallback is therefore not supported yet; revisit indexing together
-  // with a batched single-dispatch design (see three.js PR #34331).
-  for (const row of rows) {
-    const i = row.index - 1;
-    const computeNode = Fn(() => {
-      actualStorage.element(uint(i)).assign(toVec4(row.actual));
-      expectedStorage.element(uint(i)).assign(toVec4(row.expected));
-    })().compute(1);
-    await renderer.computeAsync(computeNode);
-  }
+  // Single batched dispatch. Every value is pre-evaluated via .toVar() before
+  // any If branch: a node referenced inside multiple conditional branches can
+  // otherwise be cached/declared in whichever branch builds it first, leaving
+  // sibling branches reading an uninitialized variable (same pattern as
+  // three.js PR #34331's gpu-test-utils).
+  const computeNode = Fn(() => {
+    const prepared = rows.map((row) => ({
+      actual: toVar(row.actual),
+      expected: toVar(row.expected),
+    }));
 
+    If(instanceIndex.equal(canaryRow), () => {
+      actualStorage.element(instanceIndex).assign(vec4(CANARY_VALUE, 0, 0, 0));
+    });
+
+    for (let i = 0; i < rows.length; i++) {
+      If(instanceIndex.equal(i), () => {
+        actualStorage.element(instanceIndex).assign(toVec4(prepared[i].actual));
+        expectedStorage.element(instanceIndex).assign(toVec4(prepared[i].expected));
+      });
+    }
+  })().compute(rowCount);
+
+  await renderer.computeAsync(computeNode);
+
+  // WebGL2 storage buffers are effectively single-read: read each buffer once
+  // and share the arrays between the canary check and the comparisons.
   const actualData = await readStorage(renderer, actualAttr);
   const expectedData = await readStorage(renderer, expectedAttr);
+
+  const canaryActual = actualData[canaryRow * 4];
+  if (Math.abs(canaryActual - CANARY_VALUE) > 1e-3) {
+    throw new Error(
+      `gpuTest "${name}": the compute kernel never ran (canary value missing — got ${formatFloat(canaryActual)}, expected ${formatFloat(CANARY_VALUE)}). ` +
+        `This usually means the shader failed to build (invalid WGSL, e.g. a NaN or otherwise malformed literal reaching generated shader source) ` +
+        `and the failure was only reported asynchronously — check the browser console for the underlying GPU compile error. ` +
+        `Without the canary, every assertion would have silently compared a never-written 0 against a never-written 0 and passed.`,
+    );
+  }
 
   const failures: string[] = [];
   for (const row of rows) {
