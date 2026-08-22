@@ -12,7 +12,8 @@ import {
   mat3,
   mat4,
 } from "three/tsl";
-import { getRenderer } from "./context.ts";
+import { getRenderer, isBackendAvailable, type BackendName } from "./context.ts";
+import { getDefaultBackends } from "./config.ts";
 import { readStorage } from "./readback.ts";
 
 export interface GPUAssert {
@@ -306,6 +307,12 @@ export interface GPURunOptions {
    * maxAssertions * MAX_COLUMNS rows (+ canary). Default 64.
    */
   maxAssertions?: number;
+  /**
+   * Backends to run this suite against. Defaults to configureGPU's setting,
+   * or ['webgpu', 'webgl']. Unavailable backends are soft-skipped with a
+   * warning; if none are available the test fails.
+   */
+  backends?: BackendName[];
 }
 
 /**
@@ -326,17 +333,12 @@ export interface GPURunOptions {
  * Note: `fn` is executed inside the kernel's graph-build callback (it may be
  * invoked more than once during multi-stage builds; it must be idempotent).
  */
-export async function gpuTest(
+async function runBackend(
   name: string,
   fn: (assert: GPUAssert) => void,
-  options: GPURunOptions = {},
+  maxAssertions: number,
+  backend: BackendName,
 ): Promise<void> {
-  const maxAssertions = options.maxAssertions ?? 64;
-  if (!Number.isInteger(maxAssertions) || maxAssertions < 1) {
-    throw new Error(
-      `[vitest-browser-three] gpuTest "${name}": maxAssertions must be a positive integer.`,
-    );
-  }
   const totalRows = maxAssertions * MAX_COLUMNS;
   const canaryRow = totalRows - 1;
   const maxUsableAssertions = maxAssertions - 1;
@@ -346,7 +348,7 @@ export async function gpuTest(
   const actualStorage = storage(actualAttr, "vec4", totalRows);
   const expectedStorage = storage(expectedAttr, "vec4", totalRows);
 
-  const renderer = await getRenderer();
+  const renderer = await getRenderer(backend);
 
   // One entry per built AssertionNode. The Fn callback may be invoked several
   // times across TSL's build stages; nodes MUST be reset at the start of each
@@ -469,5 +471,70 @@ export async function gpuTest(
     throw new Error(
       `gpuTest "${name}" failed:\n${failures.map((f) => `  - ${f}`).join("\n")}\n\n${dump}`,
     );
+  }
+}
+
+/**
+ * Run TSL assertions on the GPU via a single batched compute dispatch.
+ *
+ * Each assertion occupies a fixed MAX_COLUMNS-row stride; one extra row is
+ * reserved for a canary that detects kernels which never ran (shader build
+ * failures are reported by WebGPURenderer only asynchronously, so without
+ * the canary all buffers read back zero and every assertion silently passes
+ * as 0-vs-0). All rows are written via bare `instanceIndex` addressing
+ * guarded by `If(instanceIndex.equal(row), ...)` — the only write pattern
+ * the WebGL2 transform-feedback fallback supports. Results are read back
+ * once and compared on the CPU.
+ *
+ * Supports scalars, vecN and mat3/mat4. Type resolution happens at shader
+ * build time from the real node types; comparing mismatched types throws.
+ *
+ * The suite runs once per requested backend (see GPURunOptions.backends);
+ * unavailable backends are soft-skipped with a warning.
+ *
+ * Note: `fn` is executed inside the kernel's graph-build callback (it may be
+ * invoked more than once during multi-stage builds; it must be idempotent).
+ */
+export async function gpuTest(
+  name: string,
+  fn: (assert: GPUAssert) => void,
+  options: GPURunOptions = {},
+): Promise<void> {
+  const maxAssertions = options.maxAssertions ?? 64;
+  if (!Number.isInteger(maxAssertions) || maxAssertions < 1) {
+    throw new Error(
+      `[vitest-browser-three] gpuTest "${name}": maxAssertions must be a positive integer.`,
+    );
+  }
+
+  const requested = options.backends ?? getDefaultBackends();
+  const available: BackendName[] = [];
+  for (const backend of requested) {
+    if (await isBackendAvailable(backend)) {
+      available.push(backend);
+    } else {
+      console.warn(
+        `[vitest-browser-three] gpuTest "${name}": skipping unavailable "${backend}" backend.`,
+      );
+    }
+  }
+  if (available.length === 0) {
+    throw new Error(
+      `[vitest-browser-three] gpuTest "${name}": no requested GPU backends are available (requested: ${requested.join(", ")}).`,
+    );
+  }
+
+  for (const backend of available) {
+    try {
+      await runBackend(name, fn, maxAssertions, backend);
+    } catch (error) {
+      // Tag failures with the backend so multi-backend runs are diagnosable;
+      // append only, so message-based regex assertions keep matching.
+      const suffix = `[backend: ${backend}]`;
+      if (error instanceof Error && !error.message.includes(suffix)) {
+        error.message = `${error.message}\n(failed on ${suffix})`;
+      }
+      throw error;
+    }
   }
 }

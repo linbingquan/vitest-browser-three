@@ -1,7 +1,8 @@
 import type { Node } from "three/webgpu";
 import { StorageInstancedBufferAttribute } from "three/webgpu";
 import { Fn, instanceIndex, storage, float } from "three/tsl";
-import { getRenderer } from "./context.ts";
+import { getRenderer, isBackendAvailable, type BackendName } from "./context.ts";
+import { getDefaultBackends } from "./config.ts";
 import { readStorage } from "./readback.ts";
 import { DEFAULT_TOLERANCE, toVec4 } from "./assert.ts";
 
@@ -21,6 +22,11 @@ export interface FuzzSpec {
   expected: (x: number, instance: number) => number | number[];
   /** Relative tolerance; scaled by max(1, |expected|). */
   tolerance?: number;
+  /**
+   * Backends to run this suite against. Defaults to configureGPU's setting,
+   * or ['webgpu', 'webgl']. Unavailable backends are soft-skipped.
+   */
+  backends?: BackendName[];
 }
 
 function formatFloat(n: number): string {
@@ -50,7 +56,7 @@ function padExpected(value: number | number[]): [number, number, number, number]
  * component-wise after GPU readback — mirroring gpuTest's toVec4()
  * conversion semantics.
  */
-export async function gpuFuzzTest(name: string, spec: FuzzSpec): Promise<void> {
+async function runFuzzBackend(name: string, spec: FuzzSpec, backend: BackendName): Promise<void> {
   const { instances, input, test, expected } = spec;
   const tolerance = spec.tolerance ?? DEFAULT_TOLERANCE;
 
@@ -81,7 +87,7 @@ export async function gpuFuzzTest(name: string, spec: FuzzSpec): Promise<void> {
   // for the attributes that ARE used (observed on three r0.185). Expected
   // values are CPU-side anyway, so they never need to enter the GPU.
 
-  const renderer = await getRenderer();
+  const renderer = await getRenderer(backend);
 
   // Bare instanceIndex addressing: the only pattern transform-feedback
   // backends (WebGL2 fallback) support reliably.
@@ -121,5 +127,41 @@ export async function gpuFuzzTest(name: string, spec: FuzzSpec): Promise<void> {
         shown.map((f) => `  - ${f}`).join("\n") +
         more,
     );
+  }
+}
+
+/**
+ * Fuzz a TSL expression across many instances in a single compute dispatch
+ * per requested backend. Unavailable backends are soft-skipped with a
+ * warning; if none are available the test fails. See {@link FuzzSpec}.
+ */
+export async function gpuFuzzTest(name: string, spec: FuzzSpec): Promise<void> {
+  const requested = spec.backends ?? getDefaultBackends();
+  const available: BackendName[] = [];
+  for (const backend of requested) {
+    if (await isBackendAvailable(backend)) {
+      available.push(backend);
+    } else {
+      console.warn(
+        `[vitest-browser-three] gpuFuzzTest "${name}": skipping unavailable "${backend}" backend.`,
+      );
+    }
+  }
+  if (available.length === 0) {
+    throw new Error(
+      `[vitest-browser-three] gpuFuzzTest "${name}": no requested GPU backends are available (requested: ${requested.join(", ")}).`,
+    );
+  }
+
+  for (const backend of available) {
+    try {
+      await runFuzzBackend(name, spec, backend);
+    } catch (error) {
+      const suffix = `[backend: ${backend}]`;
+      if (error instanceof Error && !error.message.includes(suffix)) {
+        error.message = `${error.message}\n(failed on ${suffix})`;
+      }
+      throw error;
+    }
   }
 }
