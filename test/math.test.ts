@@ -277,3 +277,17 @@ describe("standard relative tolerance semantics", () => {
     ).rejects.toThrow(/positive integer/);
   });
 });
+
+describe("assertion messages", () => {
+  afterAll(async () => {
+    await disposeRenderer();
+  });
+
+  it("custom message appears in failure output", async () => {
+    await expect(
+      gpuTest("message-test", ({ closeRel }) => {
+        closeRel(float(1), float(2), 1e-6, "custom context");
+      }),
+    ).rejects.toThrow(/custom context/);
+  });
+});
