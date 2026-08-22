@@ -117,6 +117,14 @@ instanceIndex 寻址、AssertWriteNode 式类型解析），不依赖深度耦�
 - 多后端与探测测试（`test/backend.test.ts`）
 - canary 回归测试（`test/canary.test.ts`）
 
+### three 内部 API 的类型安全治理
+
+- 未类型化 three API 的最小结构接口集中存放在 `src/three-internals.ts`
+  （作为我们对 three 内部假设的唯一事实来源）。
+- `AssertionNode.setup` 的 builder 类型为
+  `NodeBuilderLike & Parameters<Node["getNodeType"]>[0]`，而非 deep import
+  three 内部的 NodeBuilder 类——后者跨 minor 版本脆弱，且与外部化策略冲突。
+
 ## 依赖策略
 
 - `three` 与 `vitest` / `@vitest/*` 一律 external，绝不内联（setup.ts 引

@@ -1,5 +1,9 @@
 # Design Decisions & Platform Findings
 
+> A Chinese translation of this document is available at
+> [`DECISIONS.zh.md`](./DECISIONS.zh.md). The English version is
+> authoritative.
+
 > This document records important decisions and empirical platform quirks
 > encountered during development, so we don't re-investigate them later.
 > The project is currently an unpublished single-maintainer effort; we use
