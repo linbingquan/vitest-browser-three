@@ -242,8 +242,11 @@ class AssertionNode extends Node {
   }
 
   setup(builder: any): undefined {
-    const type1: string = this.value1.getNodeType(builder);
-    const type2: string = this.value2.getNodeType(builder);
+    // TSL's "color" type behaves as vec3 in shaders; normalize so color()
+    // nodes can be compared against vec3 values/constants directly.
+    const normalizeType = (t: string) => (t === "color" ? "vec3" : t);
+    const type1: string = normalizeType(this.value1.getNodeType(builder));
+    const type2: string = normalizeType(this.value2.getNodeType(builder));
 
     if (type1 !== type2) {
       throw new Error(

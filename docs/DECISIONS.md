@@ -53,6 +53,13 @@
   缺失即抛出带诊断信息的错误。WebGL2 存储缓冲只能读一次，canary 与数据
   比较共享同一次读取的数组。
 
+### TSL `color()` node type normalization
+
+- **Finding**: `color(hex)` produces a node whose resolved type is `"color"`,
+  not `"vec3"`, even though it behaves as vec3 in shaders.
+- **Decision**: AssertionNode normalizes `"color"` to `"vec3"` before type
+  comparison, so `closeRel(colorNode, [r, g, b])` works directly.
+
 ## Dependency strategy
 
 - `three` 与 `vitest` / `@vitest/*` 一律 external，绝不内联（曾因
