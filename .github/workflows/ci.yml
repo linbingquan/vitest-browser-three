@@ -10,6 +10,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0 # full history so the zh sync check can diff origin/main...HEAD
 
       # Installs Vite+ (vp) globally, resolves the version from the project's
       # lockfile, sets up Node.js LTS, caches dependencies, and runs vp install.
@@ -21,6 +23,16 @@ jobs:
 
       - name: Install Playwright chromium
         run: vp exec -- playwright install chromium --with-deps
+
+      - name: Enforce DECISIONS.zh.md sync
+        shell: bash
+        run: |
+          if git diff --name-only origin/main...HEAD | grep -q '^docs/DECISIONS\.md$'; then
+            if ! git diff --name-only origin/main...HEAD | grep -q '^docs/DECISIONS\.zh\.md$'; then
+              echo "::error::docs/DECISIONS.md changed but docs/DECISIONS.zh.md was not updated in the same commit."
+              exit 1
+            fi
+          fi
 
       - name: Check (format + lint + typecheck)
         run: vp check

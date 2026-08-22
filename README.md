@@ -156,7 +156,9 @@ This library's design follows three.js PR
   `test/unit/addons/tsl/gpu-test-utils.js` in three.js.
 
 Full alignment decisions and platform findings are recorded in
-[docs/DECISIONS.md](./docs/DECISIONS.md).
+[docs/DECISIONS.md](./docs/DECISIONS.md) (English version is authoritative;
+a Chinese translation lives at
+[docs/DECISIONS.zh.md](./docs/DECISIONS.zh.md)).
 
 ## Development
 
