@@ -111,13 +111,13 @@ export function cpuToNode(value: number | number[] | TypedArray): Node {
   const arr = Array.isArray(value) ? value : Array.from(value as ArrayLike<number>);
   switch (arr.length) {
     case 1:
-      return float(arr[0]);
+      return float(...arr);
     case 2:
-      return vec2(arr[0], arr[1]);
+      return vec2(...arr);
     case 3:
-      return vec3(arr[0], arr[1], arr[2]);
+      return vec3(...arr);
     case 4:
-      return vec4(arr[0], arr[1], arr[2], arr[3]);
+      return vec4(...arr);
     case 9:
       const [n0, n1, n2, n3, n4, n5, n6, n7, n8] = arr;
       return mat3(n0, n1, n2, n3, n4, n5, n6, n7, n8);
