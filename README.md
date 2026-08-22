@@ -11,14 +11,12 @@ expected values instead of a bare test id.
 ## Install
 
 ```bash
-# Using Vite+ (vp wraps pnpm):
 vp add three @types/three
 vp add -D @vitest/browser @vitest/browser-playwright playwright vitest
-
-# Equivalent with plain pnpm:
-pnpm add three @types/three
-pnpm add -D @vitest/browser @vitest/browser-playwright playwright vitest
 ```
+
+> After installing the Vite+ tool, package-manager commands are routed
+> through `vp` by default (`vp install`, `vp add`, ...).
 
 Configure Vitest browser mode in `vite.config.ts`:
 
@@ -163,10 +161,17 @@ a Chinese translation lives at
 ## Development
 
 ```bash
-vp check   # format + lint + typecheck
-vp test    # browser-mode tests (requires playwright chromium)
+vp install   # also enables the git hooks
+vp check     # format + lint + typecheck
+vp test      # browser-mode tests (requires playwright chromium)
 vp run build
 ```
+
+Running `vp install` configures a pre-commit hook (via Vite+'s `prepare`
+script) that requires `docs/DECISIONS.md` and its Chinese translation
+`docs/DECISIONS.zh.md` to be updated in the same commit. The hook only takes
+effect after that initial install; before then, git has no hook configured for
+this repository.
 
 ## License
 
