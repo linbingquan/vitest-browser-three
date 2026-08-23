@@ -35,14 +35,17 @@
   "exports": {
     ".": {
       "types": "./dist/index.d.mts",
+      "import": "./dist/index.mjs",
       "default": "./dist/index.mjs"
     },
     "./pure": {
       "types": "./dist/pure.d.mts",
+      "import": "./dist/pure.mjs",
       "default": "./dist/pure.mjs"
     },
     "./setup": {
       "types": "./dist/setup.d.mts",
+      "import": "./dist/setup.mjs",
       "default": "./dist/setup.mjs"
     },
     "./package.json": "./package.json"
@@ -88,6 +91,5 @@
       "version": "11.22.0",
       "onFail": "download"
     }
-  },
-  "packageManager": "pnpm@11.22.0"
+  }
 }
