@@ -152,10 +152,10 @@ must be refactored into explicit parameters.
 ## Dependency strategy
 
 - `three` and `vitest` / `@vitest/*` are always external and never inlined
-  (a setup.ts import of vitest once caused vp pack to auto-inline vitest
+  (an early entry importing vitest once caused vp pack to auto-inline vitest
   internals; fixed).
 - `three >=0.185.0` and `vitest >=4.0.0` are declared as peerDependencies;
-  the setup subpath imports vitest at runtime, so consumers must have vitest
+  the library imports vitest at runtime, so consumers must have vitest
   installed directly.
 - `pack.exports` auto-generation is disabled: tsdown's experimental exports
   metadata rewrites the package.json `exports` map without the `"types"`

@@ -134,13 +134,25 @@ shader build time; mismatched types throw.
 
 ### Cleanup
 
-You can dispose the shared renderer manually (`afterAll(disposeRenderer)`) or
-use the automatic cleanup below — pick one; using both is harmless but
-redundant:
+The default entry (`vitest-browser-three`) disposes the shared GPU renderer
+automatically via `afterAll` — if you want automatic cleanup with no extra
+setup, import from the default entry. If you import the side-effect-free API
+from `vitest-browser-three/pure`, add one line to your Vitest setup file
+instead:
 
 ```ts
+import { afterAll } from "vitest";
+import { disposeRenderer } from "vitest-browser-three/pure";
+
+afterAll(async () => {
+  await disposeRenderer();
+});
+```
+
+```ts
+// vite.config.ts
 test: {
-  setupFiles: ["vitest-browser-three/setup"];
+  setupFiles: ["./my-gpu-setup.ts"];
 }
 ```
 

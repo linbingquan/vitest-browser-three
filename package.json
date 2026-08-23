@@ -43,11 +43,6 @@
       "import": "./dist/pure.mjs",
       "default": "./dist/pure.mjs"
     },
-    "./setup": {
-      "types": "./dist/setup.d.mts",
-      "import": "./dist/setup.mjs",
-      "default": "./dist/setup.mjs"
-    },
     "./package.json": "./package.json"
   },
   "publishConfig": {
