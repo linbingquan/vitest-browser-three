@@ -38,7 +38,9 @@ export default defineConfig({
     dts: {
       tsgo: true,
     },
-    exports: true,
+    // Keep hand-maintained "exports" in package.json: tsdown's auto
+    // generation (experimental) rewrites the map without the "types"
+    // conditions, breaking TypeScript consumers on node16/bundler resolution.
     external: ["three", "three/tsl", "three/webgpu", /^vitest($|\/)/, /^@vitest\//],
   },
   fmt: {
