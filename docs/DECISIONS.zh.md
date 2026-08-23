@@ -149,3 +149,14 @@ instanceIndex 寻址、AssertWriteNode 式类型解析），不依赖深度耦�
   且难以推理。标准公式也是多数测试库做相对比较的惯例。
 - `closeAbs` 可用于显式绝对容差。
 - CPU 常量可直接传给 `closeAbs` / `closeRel`；内部经 `cpuToNode()` 转换。
+
+## 上游测试快照
+
+- `test/upstream/` 存放从 three.js（`test/unit/addons/tsl/*.tests.js`，MIT
+  许可）精选移植的 GPU 原生 TSL 单元测试，已从 QUnit 改写为本库的
+  `gpuTest` API。
+- 这些测试是**一次性快照，不自动跟随上游**：上游原型仍在变动，且本库的定
+  位是测试工具而非 three.js 的下游测试套件。来源 commit 固定记录在
+  `test/upstream/README.md`。
+- 筛选标准：函数类型覆盖面广（标量/向量/颜色/矩阵）、期望值由闭式公式手工
+  推导、与锁定的 three 版本兼容。每次升级 three 时重新评估，按需增补文件。

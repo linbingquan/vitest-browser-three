@@ -176,3 +176,16 @@ must be refactored into explicit parameters.
 - `closeAbs` remains available for explicit absolute tolerance.
 - CPU constants can be passed directly to `closeAbs` / `closeRel`; they are
   converted internally via `cpuToNode()`.
+
+## Upstream test snapshots
+
+- `test/upstream/` holds translations of selected GPU-native TSL unit tests
+  from three.js (`test/unit/addons/tsl/*.tests.js`, MIT), adapted from QUnit
+  to this library's `gpuTest` API.
+- They are a **one-time snapshot, not auto-synced**: upstream's prototype is
+  still in flux, and this library is a testing tool, not three.js's downstream
+  test suite. Source commit is pinned in `test/upstream/README.md`.
+- Selection criteria: broad function-type coverage (scalar/vector/color/matrix),
+  hand-derived closed-form expected values, and known compatibility with the
+  pinned three version. Revisit on every three upgrade; port more files only
+  as needed.
