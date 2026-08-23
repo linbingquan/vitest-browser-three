@@ -5,7 +5,7 @@
 // expected value below is the plain closed-form formula for that blend mode,
 // hand-evaluated in plain JS/comments — not derived by re-running the TSL
 // expression under test.
-import { afterAll, describe, it } from "vitest";
+import { describe, it } from "vitest";
 import {
   blendBurn,
   blendColor,
@@ -15,13 +15,9 @@ import {
   vec3,
   vec4,
 } from "three/tsl";
-import { disposeRenderer, gpuTest } from "../../src/index.ts";
+import { gpuTest } from "../../src/index.ts";
 
 describe("upstream: blend mode functions", () => {
-  afterAll(async () => {
-    await disposeRenderer();
-  });
-
   it("blendBurn() darkens base using blend — min(1, (1-base)/blend), inverted", async () => {
     await gpuTest("blendBurn", ({ closeAbs }) => {
       // A white blend layer (1) leaves the base unchanged: 1-min(1,(1-b)/1) = b.

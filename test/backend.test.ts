@@ -1,14 +1,8 @@
-import { describe, it, expect, afterAll } from "vitest";
+import { describe, it, expect } from "vitest";
 import { float, sin } from "three/tsl";
 import { gpuTest, gpuFuzzTest, isBackendAvailable, configureGPU } from "../src/index.js";
-import { disposeRenderer } from "../src/context.js";
 
 describe("stage-3: multi-backend support", () => {
-  afterAll(async () => {
-    // Just clean up; other test files lazily init their own renderer.
-    await disposeRenderer();
-  });
-
   it("probes at least one usable backend in this environment", async () => {
     const webgpu = await isBackendAvailable("webgpu");
     const webgl = await isBackendAvailable("webgl");

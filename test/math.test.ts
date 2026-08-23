@@ -1,13 +1,9 @@
-import { describe, it, afterAll, expect } from "vitest";
+import { describe, it, expect } from "vitest";
 import { float, sin, cos, vec2, vec3, vec4, mat4 } from "three/tsl";
 import { Matrix4 } from "three/webgpu";
-import { gpuTest, gpuFuzzTest, disposeRenderer } from "../src/index.ts";
+import { gpuTest, gpuFuzzTest } from "../src/index.ts";
 
 describe("gpu smoke tests", () => {
-  afterAll(async () => {
-    await disposeRenderer();
-  });
-
   it("scalar math", async () => {
     await gpuTest("scalar", ({ closeRel }) => {
       closeRel(sin(float(Math.PI / 2)), 1);
@@ -73,10 +69,6 @@ describe("gpu smoke tests", () => {
 });
 
 describe("gpuFuzzTest", () => {
-  afterAll(async () => {
-    await disposeRenderer();
-  });
-
   it("sin over 128 instances matches CPU reference", async () => {
     await gpuFuzzTest("sin", {
       instances: 128,
@@ -153,10 +145,6 @@ describe("gpuFuzzTest", () => {
 });
 
 describe("stage-2: type resolution, matrices, relational assertions", () => {
-  afterAll(async () => {
-    await disposeRenderer();
-  });
-
   it("relational assertions pass", async () => {
     await gpuTest(
       "relations-pass",
@@ -250,10 +238,6 @@ describe("stage-2: type resolution, matrices, relational assertions", () => {
 });
 
 describe("standard relative tolerance semantics", () => {
-  afterAll(async () => {
-    await disposeRenderer();
-  });
-
   it("closeRel is strict for small expected values", async () => {
     // diff = 5e-7 > 1e-6 * max(|a|,|e|) ~ 1e-7 -> must fail
     await expect(
@@ -279,10 +263,6 @@ describe("standard relative tolerance semantics", () => {
 });
 
 describe("assertion messages", () => {
-  afterAll(async () => {
-    await disposeRenderer();
-  });
-
   it("custom message appears in failure output", async () => {
     await expect(
       gpuTest("message-test", ({ closeRel }) => {

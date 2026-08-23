@@ -1,4 +1,4 @@
-import { describe, it, afterAll } from "vitest";
+import { describe, it } from "vitest";
 import { type Node, Color } from "three/webgpu";
 import {
   Fn,
@@ -18,7 +18,7 @@ import {
   step,
   vec3,
 } from "three/tsl";
-import { gpuTest, gpuFuzzTest, disposeRenderer } from "../src/index.js";
+import { gpuTest, gpuFuzzTest } from "../src/index.js";
 
 // Linear-sRGB components of the example's colors (ColorManagement converts
 // the sRGB hex on construction, matching what color(hex) produces on GPU).
@@ -35,10 +35,6 @@ const bandColor = Fn(([_y]: [any]) => {
 });
 
 describe("real-world snippets", () => {
-  afterAll(async () => {
-    await disposeRenderer();
-  });
-
   it("band color boundary cases (Fn + step + mix + color)", async () => {
     await gpuTest(
       "band-color-boundaries",
@@ -112,10 +108,6 @@ const stripeColor = Fn(([u, v, t]: [any, any, any]) => {
 });
 
 describe("real-world snippets: animated stripes", () => {
-  afterAll(async () => {
-    await disposeRenderer();
-  });
-
   it("stripe boundaries with explicit u/v/t", async () => {
     await gpuTest(
       "stripe-boundaries",
@@ -202,10 +194,6 @@ const rimLit = Fn(([n, l, v]: [Node<"vec3">, Node<"vec3">, Node<"vec3">]) => {
 });
 
 describe("real-world snippets: stylized rim-lit shading", () => {
-  afterAll(async () => {
-    await disposeRenderer();
-  });
-
   it("rim-lit boundaries match CPU reference", async () => {
     await gpuTest(
       "rim-lit-boundaries",
