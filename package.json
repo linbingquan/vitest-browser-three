@@ -23,7 +23,8 @@
     "url": "git+https://github.com/your-name/vitest-browser-three.git"
   },
   "files": [
-    "dist"
+    "dist",
+    "docs"
   ],
   "type": "module",
   "exports": {

@@ -8,6 +8,11 @@ shader, executed on a real GPU (WebGPU, with a WebGL2 fallback path), and the
 results are read back and compared on the CPU — so failures report actual vs.
 expected values instead of a bare test id.
 
+Design decisions and platform findings are documented in
+[`docs/DECISIONS.md`](./docs/DECISIONS.md) (Chinese translation in
+[`docs/DECISIONS.zh.md`](./docs/DECISIONS.zh.md)), also shipped in the published package at
+`node_modules/vitest-browser-three/docs/` for agent/tool consumption.
+
 ## Install
 
 ```bash
