@@ -3,6 +3,11 @@
 GPU-native assertions for [three.js](https://threejs.org) TSL expressions, running in
 [Vitest Browser Mode](https://vitest.dev/guide/browser/).
 
+> Currently maintained by an individual developer
+> ([@linbingquan](https://github.com/linbingquan)); the repository structure and
+> API conventions follow the official vitest-browser-* community plugins, with
+> the long-term goal of joining the Vitest community. Contributions welcome.
+
 Instead of mocking the GPU away, every assertion is compiled to a compute
 shader, executed on a real GPU (WebGPU, with a WebGL2 fallback path), and the
 results are read back and compared on the CPU — so failures report actual vs.

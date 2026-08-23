@@ -12,7 +12,7 @@ jobs:
   # Keep detection outside the Release environment. Environment approval is job-level,
   # so the publish job is only created after a release commit is detected.
   detect:
-    if: github.repository == 'vitest-community/vitest-browser-three'
+    if: github.repository == 'linbingquan/vitest-browser-three'
     name: Detect release commit
     runs-on: ubuntu-latest
     outputs:
@@ -113,8 +113,8 @@ jobs:
           GH_TOKEN: ${{ steps.generate-token.outputs.token }}
         run: |
           TAG="v$VERSION"
-          git config user.name "vitest-community-release-bot[bot]"
-          git config user.email "297853836+vitest-community-release-bot[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git tag "$TAG" "$GITHUB_SHA"
           git push "https://x-access-token:$GH_TOKEN@github.com/$GITHUB_REPOSITORY.git" "$TAG"
 

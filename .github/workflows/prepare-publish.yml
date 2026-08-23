@@ -34,7 +34,7 @@ permissions: {}
 
 jobs:
   prepare:
-    if: github.repository == 'vitest-community/vitest-browser-three'
+    if: github.repository == 'linbingquan/vitest-browser-three'
     name: Prepare release PR
     runs-on: ubuntu-latest
     permissions:
@@ -70,10 +70,9 @@ jobs:
           RELEASE_INPUT="${RELEASE_VERSION:-$RELEASE_TYPE}"
           PREPARE_BRANCH="prepare-$TARGET_BRANCH-$RELEASE_INPUT-$RUN_ID"
           git switch -c "$PREPARE_BRANCH"
-          # The numeric prefix comes from `gh api /users/vitest-community-release-bot%5Bbot%5D --jq .id`.
           # This is just to make the avatar in the commit look pretty.
-          git config user.name "vitest-community-release-bot[bot]"
-          git config user.email "297853836+vitest-community-release-bot[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           pnpm run release
 
       - id: generate-token

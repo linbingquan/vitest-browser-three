@@ -13,17 +13,16 @@
     "vitest",
     "webgpu"
   ],
-  "homepage": "https://github.com/vitest-community/vitest-browser-three#readme",
+  "homepage": "https://github.com/linbingquan/vitest-browser-three#readme",
   "bugs": {
-    "url": "https://github.com/vitest-community/vitest-browser-three/issues"
+    "url": "https://github.com/linbingquan/vitest-browser-three/issues"
   },
   "license": "MIT",
-  "author": "Vitest Community",
+  "author": "linbingquan",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/vitest-community/vitest-browser-three.git"
+    "url": "git+https://github.com/linbingquan/vitest-browser-three.git"
   },
-  "funding": "https://opencollective.com/vitest",
   "files": [
     "dist",
     "docs"
