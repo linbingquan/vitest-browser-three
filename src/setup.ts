@@ -1,8 +1,8 @@
-// Explicit auto-cleanup integration for vitest `setupFiles`.
+// Explicit opt-in disposal for use with vitest `setupFiles`.
 //
-// The default entry point (`vitest-browser-three`) already registers this
-// cleanup; import `vitest-browser-three/setup` instead when you want the
-// side-effect-free API plus opt-in disposal, e.g.:
+// The default entry (`vitest-browser-three`) already registers this cleanup;
+// import `vitest-browser-three/setup` only if you import the API from
+// `vitest-browser-three/pure` (side-effect free) and still want disposal:
 //   test: { setupFiles: ["vitest-browser-three/setup"] }
 //
 // Disposes the shared GPU renderer once per test file, freeing GPU memory
