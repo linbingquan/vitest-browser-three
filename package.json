@@ -52,28 +52,22 @@
     "dev": "vp pack --watch",
     "test": "vp test",
     "check": "vp check",
-    "publish-ci": "vp exec tsx scripts/publish-ci.ts",
-    "release": "vp exec tsx scripts/release.ts",
+    "release": "vp exec bumpp",
     "prepublishOnly": "vp run build",
     "prepare": "vp config"
   },
   "devDependencies": {
     "@types/node": "^26.1.1",
-    "@types/semver": "^7.7.1",
     "@types/three": "^0.185.4",
     "@vitest/browser": "4.1.10",
     "@vitest/browser-playwright": "4.1.10",
     "bumpp": "^11.1.0",
-    "changelogithub": "^14.0.0",
     "playwright": "^1.62.1",
-    "semver": "^7.8.3",
     "three": "^0.185.1",
-    "tsx": "^4.17.0",
     "typescript": "^7.0.2",
     "vite": "catalog:",
     "vite-plus": "catalog:",
-    "vitest": "4.1.10",
-    "zx": "^8.1.4"
+    "vitest": "4.1.10"
   },
   "peerDependencies": {
     "three": ">=0.185.0",
