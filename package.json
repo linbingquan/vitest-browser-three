@@ -3,6 +3,7 @@
   "version": "0.0.1",
   "description": "GPU-native assertions for three.js TSL expressions in Vitest Browser Mode.",
   "keywords": [
+    "browser",
     "gpu",
     "shader",
     "testing",
@@ -12,29 +13,37 @@
     "vitest",
     "webgpu"
   ],
-  "homepage": "https://github.com/your-name/vitest-browser-three#readme",
+  "homepage": "https://github.com/vitest-community/vitest-browser-three#readme",
   "bugs": {
-    "url": "https://github.com/your-name/vitest-browser-three/issues"
+    "url": "https://github.com/vitest-community/vitest-browser-three/issues"
   },
   "license": "MIT",
-  "author": "Your Name <your.name@mail.com>",
+  "author": "Vitest Community",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/your-name/vitest-browser-three.git"
+    "url": "git+https://github.com/vitest-community/vitest-browser-three.git"
   },
+  "funding": "https://opencollective.com/vitest",
   "files": [
     "dist",
     "docs"
   ],
   "type": "module",
+  "main": "./dist/index.mjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.mts",
   "exports": {
     ".": {
       "types": "./dist/index.d.mts",
-      "import": "./dist/index.mjs"
+      "default": "./dist/index.mjs"
+    },
+    "./pure": {
+      "types": "./dist/pure.d.mts",
+      "default": "./dist/pure.mjs"
     },
     "./setup": {
       "types": "./dist/setup.d.mts",
-      "import": "./dist/setup.mjs"
+      "default": "./dist/setup.mjs"
     },
     "./package.json": "./package.json"
   },
@@ -46,21 +55,28 @@
     "dev": "vp pack --watch",
     "test": "vp test",
     "check": "vp check",
+    "publish-ci": "vp exec tsx scripts/publish-ci.ts",
+    "release": "vp exec tsx scripts/release.ts",
     "prepublishOnly": "vp run build",
     "prepare": "vp config"
   },
   "devDependencies": {
     "@types/node": "^26.1.1",
+    "@types/semver": "^7.7.1",
     "@types/three": "^0.185.4",
     "@vitest/browser": "4.1.10",
     "@vitest/browser-playwright": "4.1.10",
     "bumpp": "^11.1.0",
+    "changelogithub": "^14.0.0",
     "playwright": "^1.62.1",
+    "semver": "^7.8.3",
     "three": "^0.185.1",
+    "tsx": "^4.17.0",
     "typescript": "^7.0.2",
     "vite": "catalog:",
     "vite-plus": "catalog:",
-    "vitest": "4.1.10"
+    "vitest": "4.1.10",
+    "zx": "^8.1.4"
   },
   "peerDependencies": {
     "three": ">=0.185.0",
@@ -72,5 +88,6 @@
       "version": "11.22.0",
       "onFail": "download"
     }
-  }
+  },
+  "packageManager": "pnpm@11.22.0"
 }
