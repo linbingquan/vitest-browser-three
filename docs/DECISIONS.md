@@ -157,6 +157,11 @@ must be refactored into explicit parameters.
 - `three >=0.185.0` and `vitest >=4.0.0` are declared as peerDependencies;
   the setup subpath imports vitest at runtime, so consumers must have vitest
   installed directly.
+- `pack.exports` auto-generation is disabled: tsdown's experimental exports
+  metadata rewrites the package.json `exports` map without the `"types"`
+  conditions, breaking TypeScript consumers under node16/nodenext/bundler
+  resolution. The exports map is hand-maintained instead; revisit only if a
+  future tsdown preserves existing conditions.
 
 ## Tolerance semantics
 

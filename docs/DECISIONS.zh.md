@@ -135,6 +135,10 @@ instanceIndex 寻址、AssertWriteNode 式类型解析），不依赖深度耦�
   入 vitest 曾导致 vp pack 自动内联 vitest 内部包，已修复）。
 - `three >=0.185.0` 与 `vitest >=4.0.0` 声明为 peerDependencies；setup 子
   路径运行时直接 import vitest，要求项目直接依赖它。
+- 已禁用 `pack.exports` 自动生成：tsdown 的实验性 exports 元数据会重写
+  package.json 的 `exports` 映射且丢失 `"types"` 条件，导致 TypeScript 消
+  费者在 node16/nodenext/bundler 解析下找不到类型声明。改为手工维护
+  exports 映射；仅当未来 tsdown 能保留现有条件时再重新评估。
 
 ## 容差语义
 
