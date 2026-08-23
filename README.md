@@ -173,6 +173,26 @@ script) that requires `docs/DECISIONS.md` and its Chinese translation
 effect after that initial install; before then, git has no hook configured for
 this repository.
 
+### GPU rendering mode
+
+By default tests render with Chrome's bundled SwiftShader (CPU), which works
+in restricted containers and CI. On a machine with a working hardware Vulkan
+driver, use:
+
+```bash
+GPU_RENDER=hw vp test   # case-insensitive; runs on the real GPU via ANGLE Vulkan
+```
+
+Limitations:
+
+- `GPU_RENDER=hw` requires a working hardware Vulkan ICD; Chrome headless
+  otherwise silently falls back to SwiftShader even on GPU-equipped machines.
+- On machines without a usable hardware GPU, hw mode makes WebGL-only tests
+  fail (the default software mode keeps all tests passing).
+- Native WebGPU is not exercised in headless mode (Playwright's headless shell
+  does not expose `navigator.gpu`); the `webgpu` backend is soft-skipped, so
+  only the `webgl` backend actually runs.
+
 ## License
 
 MIT
