@@ -1,5 +1,15 @@
 # Contributing
 
+## Testing conventions
+
+Tests that import from the default entry (`../src/index.ts`) get per-file GPU
+renderer cleanup automatically — the entry registers `afterAll(disposeRenderer)`
+on import. Do **not** add hand-written `afterAll` blocks in those files.
+
+Manual cleanup is only needed when importing from the side-effect-free
+`vitest-browser-three/pure`: either register `afterAll(disposeRenderer)`
+yourself or use a Vitest setup file (see the Cleanup section in README.md).
+
 ## Release process
 
 > This section is for maintainers with commit access.
