@@ -11,6 +11,11 @@ export default defineConfig({
       provider: playwright({
         launchOptions: {
           args: ["--enable-unsafe-webgpu", "--enable-features=Vulkan", "--use-angle=swiftshader"],
+          // Some dev containers export VK_LOADER_DRIVERS_SELECT=*nvidia*, which
+          // hides all non-NVIDIA Vulkan ICDs and breaks ANGLE/SwANGLE init
+          // (getContext("webgl2") returns null). Drop the restriction so the
+          // loader can find any usable ICD (e.g. mesa lavapipe).
+          env: { ...process.env, VK_LOADER_DRIVERS_SELECT: undefined },
         },
       }) as never,
       instances: [{ browser: "chromium" }],
