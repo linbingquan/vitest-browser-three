@@ -7,6 +7,7 @@
 > The project is currently an unpublished single-maintainer effort; we use
 > a lightweight single document instead of full ADR. If the contributor base
 > grows, this can be upgraded to an ADR directory.
+> Last reviewed: 2026-08-23.
 
 ## Upstream alignment
 
