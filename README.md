@@ -31,7 +31,17 @@ export default defineConfig({
       headless: true,
       provider: playwright({
         launchOptions: {
-          args: ["--enable-unsafe-webgpu", "--enable-features=Vulkan", "--use-angle=swiftshader"],
+          // Default: software rendering (container/CI friendly).
+          // Set GPU_RENDER=hw to test on the real GPU instead.
+          args: [
+            "--enable-unsafe-webgpu",
+            ...(process.env.GPU_RENDER?.toLowerCase() === "hw"
+              ? ["--use-angle=vulkan"]
+              : ["--enable-features=Vulkan", "--use-angle=swiftshader"]),
+          ],
+          // Some dev containers export VK_LOADER_DRIVERS_SELECT=*nvidia*,
+          // which hides all other Vulkan ICDs and breaks WebGL init.
+          env: { ...process.env, VK_LOADER_DRIVERS_SELECT: undefined },
         },
       }),
       instances: [{ browser: "chromium" }],
