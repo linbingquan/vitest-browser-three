@@ -122,10 +122,9 @@ instanceIndex 寻址、AssertWriteNode 式类型解析），不依赖深度耦�
 ## 测试分类
 
 - 纯数学/表达式测试（`test/math.test.ts`）
-- 真实场景片段（`test/real-world.test.ts`）——收录标准：覆盖新的编译模
-  式；几何/上下文节点重构为显式参数
 - 多后端与探测测试（`test/backend.test.ts`）
 - canary 回归测试（`test/canary.test.ts`）
+- 底层计算与整数回读测试（`test/raw-compute.test.ts`）
 
 ### three 内部 API 的类型安全治理
 
@@ -155,12 +154,3 @@ instanceIndex 寻址、AssertWriteNode 式类型解析），不依赖深度耦�
   且难以推理。标准公式也是多数测试库做相对比较的惯例。
 - `closeAbs` 可用于显式绝对容差。
 - CPU 常量可直接传给 `closeAbs` / `closeRel`；内部经 `cpuToNode()` 转换。
-
-## 上游测试快照
-
-- `test/upstream/` 存放从 three.js（`test/unit/addons/tsl/*.tests.js`，MIT
-  许可）精选移植的 GPU 原生 TSL 单元测试，已从 QUnit 改写为本库的
-  `gpuTest` / `rawComputeTest` API，作为 **API 验证示例**。
-- 这些测试是**精选快照，不自动跟随上游**，也不是完整迁移：按需移植用例以
-  验证我们需要的 API 路径。每次升级 three 时重新评估，按需更新或移除。
-- 源文件在每个测试文件头部注释中标注；相关上游 PR 列在 `test/upstream/README.md`。

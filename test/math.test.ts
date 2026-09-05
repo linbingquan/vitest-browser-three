@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { float, sin, cos, vec2, vec3, vec4, mat4 } from "three/tsl";
+import { blendColor } from "three/tsl";
 import { Matrix4 } from "three/webgpu";
 import { gpuTest, gpuFuzzTest } from "../src/index.ts";
 
@@ -269,5 +270,31 @@ describe("assertion messages", () => {
         closeRel(float(1), float(2), 1e-6, "custom context");
       }),
     ).rejects.toThrow(/custom context/);
+  });
+});
+
+describe("vec4 and blend operations", () => {
+  it("blendColor: standard over alpha compositing", async () => {
+    await gpuTest("blendColor", ({ closeAbs }) => {
+      // Fully opaque blend layer completely replaces the base.
+      closeAbs(blendColor(vec4(0.2, 0.4, 0.6, 0.5), vec4(1, 0, 0, 1)), vec4(1, 0, 0, 1), 1e-4);
+
+      // Fully transparent blend layer leaves the base unchanged.
+      closeAbs(
+        blendColor(vec4(0.2, 0.4, 0.6, 0.7), vec4(1, 1, 1, 0)),
+        vec4(0.2, 0.4, 0.6, 0.7),
+        1e-4,
+      );
+
+      // General over compositing.
+      const outAlpha = 0.75;
+      const outR = (1 * 0.5 * 0.5) / outAlpha;
+      const outG = (1 * 0.5) / outAlpha;
+      closeAbs(
+        blendColor(vec4(1, 0, 0, 0.5), vec4(0, 1, 0, 0.5)),
+        vec4(outR, outG, 0, outAlpha),
+        1e-4,
+      );
+    });
   });
 });

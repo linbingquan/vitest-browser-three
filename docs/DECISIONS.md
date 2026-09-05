@@ -142,10 +142,9 @@ must be refactored into explicit parameters.
 ## Test classification
 
 - Pure math/expression tests (`test/math.test.ts`)
-- Real-world snippets (`test/real-world.test.ts`) — acceptance: covers new
-  compilation modes; geometry/context nodes refactored into explicit params
 - Multi-backend & probing tests (`test/backend.test.ts`)
 - Canary regression (`test/canary.test.ts`)
+- Raw compute & integer readback tests (`test/raw-compute.test.ts`)
 
 ### Type-safety governance for three internals
 
@@ -183,14 +182,3 @@ must be refactored into explicit parameters.
 - `closeAbs` remains available for explicit absolute tolerance.
 - CPU constants can be passed directly to `closeAbs` / `closeRel`; they are
   converted internally via `cpuToNode()`.
-
-## Upstream test snapshots
-
-- `test/upstream/` holds selected GPU-native TSL unit tests from three.js
-  (`test/unit/addons/tsl/*.tests.js`, MIT), adapted from QUnit to this
-  library's `gpuTest` / `rawComputeTest` APIs as **API validation examples**.
-- They are a **curated snapshot, not auto-synced** and not a full migration:
-  select cases are ported when they exercise an API path we need to validate.
-  Revisit on every three.js upgrade; update or drop ported examples as needed.
-- Source files are referenced in each test file's header comment; relevant
-  upstream PRs are listed in `test/upstream/README.md`.

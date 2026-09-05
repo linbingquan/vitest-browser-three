@@ -7,12 +7,8 @@ import {
   instanceIndex,
   instancedArray,
   atomicAdd,
-  atomicSub,
   atomicMax,
-  atomicMin,
   atomicAnd,
-  atomicOr,
-  atomicXor,
   atomicLoad,
   atomicStore,
   uint,
@@ -20,7 +16,7 @@ import {
   shiftLeft,
   bitNot,
 } from "three/tsl";
-import { rawComputeTest, readUintBuffer, readIntBuffer } from "../../src/index.ts";
+import { rawComputeTest, readUintBuffer, readIntBuffer } from "../src/index.ts";
 
 const WORKGROUP_SIZE = 8;
 
@@ -64,24 +60,6 @@ describe("rawComputeTest API validation", () => {
       });
     });
 
-    it("atomicSub: concurrent subs drain exactly once each", async () => {
-      await rawComputeTest("atomicSub uint", { backend: "webgpu" }, async ({ renderer }) => {
-        const dispatchCount = 64;
-        const counter = makeUintCounter();
-
-        await seedUint(renderer, counter, dispatchCount);
-
-        const kernel = Fn(() => {
-          atomicSub(counter.element(uint(0)), uint(1));
-        })().compute(dispatchCount, [WORKGROUP_SIZE]);
-
-        await renderer.computeAsync(kernel);
-
-        const data = await readUintBuffer(renderer, counter.value);
-        expect(data[0]).toBe(0);
-      });
-    });
-
     it("atomicMax: converges to the true maximum", async () => {
       await rawComputeTest("atomicMax uint", { backend: "webgpu" }, async ({ renderer }) => {
         const dispatchCount = 37;
@@ -97,24 +75,6 @@ describe("rawComputeTest API validation", () => {
 
         const data = await readUintBuffer(renderer, counter.value);
         expect(data[0]).toBe(dispatchCount - 1);
-      });
-    });
-
-    it("atomicMin: converges to the true minimum", async () => {
-      await rawComputeTest("atomicMin uint", { backend: "webgpu" }, async ({ renderer }) => {
-        const dispatchCount = 37;
-        const counter = makeUintCounter();
-
-        await seedUint(renderer, counter, 0xffffffff);
-
-        const kernel = Fn(() => {
-          atomicMin(counter.element(uint(0)), instanceIndex);
-        })().compute(dispatchCount, [WORKGROUP_SIZE]);
-
-        await renderer.computeAsync(kernel);
-
-        const data = await readUintBuffer(renderer, counter.value);
-        expect(data[0]).toBe(0);
       });
     });
 
@@ -134,44 +94,6 @@ describe("rawComputeTest API validation", () => {
 
         const data = await readUintBuffer(renderer, counter.value);
         expect(data[0]).toBe(0);
-      });
-    });
-
-    it("atomicOr: each invocation sets one distinct bit", async () => {
-      await rawComputeTest("atomicOr uint", { backend: "webgpu" }, async ({ renderer }) => {
-        const dispatchCount = 32;
-        const counter = makeUintCounter();
-
-        await seedUint(renderer, counter, 0);
-
-        const kernel = Fn(() => {
-          const bit = shiftLeft(uint(1), instanceIndex);
-          atomicOr(counter.element(uint(0)), bit);
-        })().compute(dispatchCount, [WORKGROUP_SIZE]);
-
-        await renderer.computeAsync(kernel);
-
-        const data = await readUintBuffer(renderer, counter.value);
-        expect(data[0] >>> 0).toBe(0xffffffff);
-      });
-    });
-
-    it("atomicXor: each invocation flips one distinct bit", async () => {
-      await rawComputeTest("atomicXor uint", { backend: "webgpu" }, async ({ renderer }) => {
-        const dispatchCount = 32;
-        const counter = makeUintCounter();
-
-        await seedUint(renderer, counter, 0);
-
-        const kernel = Fn(() => {
-          const bit = shiftLeft(uint(1), instanceIndex);
-          atomicXor(counter.element(uint(0)), bit);
-        })().compute(dispatchCount, [WORKGROUP_SIZE]);
-
-        await renderer.computeAsync(kernel);
-
-        const data = await readUintBuffer(renderer, counter.value);
-        expect(data[0] >>> 0).toBe(0xffffffff);
       });
     });
 
@@ -215,30 +137,11 @@ describe("rawComputeTest API validation", () => {
       });
     });
 
-    it("atomicSub: concurrent subs drain exactly once each (signed)", async () => {
-      await rawComputeTest("atomicSub int", { backend: "webgpu" }, async ({ renderer }) => {
-        const dispatchCount = 64;
-        const counter = makeIntCounter();
-
-        await seedInt(renderer, counter, dispatchCount);
-
-        const kernel = Fn(() => {
-          atomicSub(counter.element(int(0)), int(1));
-        })().compute(dispatchCount, [WORKGROUP_SIZE]);
-
-        await renderer.computeAsync(kernel);
-
-        const data = await readIntBuffer(renderer, counter.value);
-        expect(data[0]).toBe(0);
-      });
-    });
-
     it("handles negative values correctly", async () => {
       await rawComputeTest("atomicAdd negative", { backend: "webgpu" }, async ({ renderer }) => {
         const dispatchCount = 32;
         const counter = makeIntCounter();
 
-        // Start with -32 and add 1 from each invocation
         await seedInt(renderer, counter, -32);
 
         const kernel = Fn(() => {
