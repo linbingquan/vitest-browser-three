@@ -1,5 +1,5 @@
-// Translated from three.js test/unit/addons/tsl/GPUAtomicsStorage.tests.js
-// (MIT license, snapshot commit 1e4dcdc0 — see ./README.md).
+// Reference: three.js test/unit/addons/tsl/GPUAtomicsStorage.tests.js
+// MIT license — ported as API validation example for rawComputeTest.
 //
 // Coverage for every `atomicFunc()`-family op (AtomicFunctionNode.js) on a
 // *storage* buffer (`instancedArray(...).toAtomic()`) -- as opposed to

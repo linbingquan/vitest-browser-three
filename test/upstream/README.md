@@ -1,16 +1,16 @@
 # Upstream TSL tests
 
-Tests in this directory are translated from three.js's GPU-native TSL unit
-tests (`test/unit/addons/tsl/*.tests.js`, prototype from
-https://github.com/mrceel/three.js/pull/34331 — see also the upstream PR
-tracked in `docs/DECISIONS.md`), MIT license, and adapted from QUnit to
-Vitest Browser Mode using this library's `gpuTest` API.
+Tests in this directory are adapted from three.js's GPU-native TSL unit
+tests (`test/unit/addons/tsl/*.tests.js`, MIT license). They serve as
+**API validation examples** — using upstream test logic to verify that this
+library's `gpuTest` / `rawComputeTest` APIs correctly exercise the GPU.
 
-They are a **one-time snapshot**, not auto-synced with upstream. Revisit on
-three.js version upgrades: check upstream for new or changed cases worth
-porting, then update the source commit below.
+This is **not** a full migration of upstream tests. It is a curated snapshot:
+select cases are ported when they exercise an API path we need to validate.
+Revisit on three.js version upgrades: if an upstream case breaks due to API
+changes, update or drop the ported example accordingly.
 
-Source commits:
+Relevant upstream PRs:
 
-- `1e4dcdc0910e6a42bd13f5a905e4a27bffed845c` (TSLBlendModes)
-- `6a4a0f99a62adcb9ca9c7cbf38c26f0a099166c1` (GPUAtomicsStorage)
+- `gpu-test-utils.js`: #34331, #34427
+- `gpu-raw-test-utils.js`: #34431

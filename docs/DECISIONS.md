@@ -186,13 +186,11 @@ must be refactored into explicit parameters.
 
 ## Upstream test snapshots
 
-- `test/upstream/` holds translations of selected GPU-native TSL unit tests
-  from three.js (`test/unit/addons/tsl/*.tests.js`, MIT), adapted from QUnit
-  to this library's `gpuTest` API.
-- They are a **one-time snapshot, not auto-synced**: upstream's prototype is
-  still in flux, and this library is a testing tool, not three.js's downstream
-  test suite. Source commit is pinned in `test/upstream/README.md`.
-- Selection criteria: broad function-type coverage (scalar/vector/color/matrix),
-  hand-derived closed-form expected values, and known compatibility with the
-  pinned three version. Revisit on every three upgrade; port more files only
-  as needed.
+- `test/upstream/` holds selected GPU-native TSL unit tests from three.js
+  (`test/unit/addons/tsl/*.tests.js`, MIT), adapted from QUnit to this
+  library's `gpuTest` / `rawComputeTest` APIs as **API validation examples**.
+- They are a **curated snapshot, not auto-synced** and not a full migration:
+  select cases are ported when they exercise an API path we need to validate.
+  Revisit on every three.js upgrade; update or drop ported examples as needed.
+- Source files are referenced in each test file's header comment; relevant
+  upstream PRs are listed in `test/upstream/README.md`.

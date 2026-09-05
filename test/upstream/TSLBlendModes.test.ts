@@ -1,5 +1,5 @@
-// Translated from three.js test/unit/addons/tsl/TSLBlendModes.tests.js
-// (MIT license, snapshot commit 1e4dcdc0 — see ./README.md).
+// Reference: three.js test/unit/addons/tsl/TSLBlendModes.tests.js
+// MIT license — ported as API validation example for gpuTest.
 //
 // Blend-mode function coverage (src/nodes/display/BlendModes.js). Every
 // expected value below is the plain closed-form formula for that blend mode,
