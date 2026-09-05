@@ -113,6 +113,12 @@ instanceIndex 寻址、AssertWriteNode 式类型解析），不依赖深度耦�
   rejection 给首个调用者——后续调用经 failed 标记同步抛错（无
   unhandledrejection 噪音）。
 
+## 底层计算缓冲回读
+
+- **决策**：整数回读辅助函数要求传入底层 storage attribute（`node.value`），
+  而非 TSL 节点本身。这提供了编译时类型安全并保持辅助函数职责单一；与无
+  类型约束的上游原型不同，我们不自动解包节点。调用者显式传入 `.value`。
+
 ## 测试分类
 
 - 纯数学/表达式测试（`test/math.test.ts`）

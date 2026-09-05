@@ -132,6 +132,13 @@ must be refactored into explicit parameters.
   while preserving the original rejection for the first caller — later calls
   throw synchronously via the `failed` flag (no unhandledrejection noise).
 
+## Raw compute buffer readback
+
+- **Decision**: integer readback helpers require the storage attribute
+  (`node.value`), not the TSL node itself. This gives compile-time safety
+  and keeps the helper's responsibility single; unlike the untyped upstream
+  prototype, we do not auto-unwrap nodes. Callers explicitly pass `.value`.
+
 ## Test classification
 
 - Pure math/expression tests (`test/math.test.ts`)
