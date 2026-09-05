@@ -10,7 +10,6 @@ GPU-native assertions for three.js TSL expressions in Vitest Browser Mode.
   - [`gpuTest`](./api/gpu-test.md) - Batch assertions for TSL expressions
   - [`gpuFuzzTest`](./api/gpu-fuzz-test.md) - Fuzz testing with deterministic inputs
   - [`rawComputeTest`](./api/raw-compute.md) - Low-level GPU compute control
-  - [Assertions](./api/assertions.md) - eq, closeAbs, closeRel, relational
   - [Buffer Readback](./api/readback.md) - readStorage, readUintBuffer, readIntBuffer
 - [Examples](./examples/)
 - [Best Practices](./best-practices.md) - Tolerance selection, backend fallback

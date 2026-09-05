@@ -66,9 +66,11 @@ await gpuTest("scalar math", ({ eq, closeRel }) => {
 ### Vector Operations
 
 ```ts
+import { vec2, vec3, vec4 } from "three/tsl";
+
 await gpuTest("vector math", ({ closeRel }) => {
   closeRel(vec3(1, 2, 3).mul(2), vec3(2, 4, 6));
-  closeRel(vec3(1, 2, 3).add(vec3(0.5)), vec3(1.5, 2.5, 3.5));
+  closeRel(vec2(3, 4).length(), float(5), 1e-5); // vec2.length()
 });
 ```
 
@@ -86,6 +88,15 @@ await gpuTest(
   },
   { maxAssertions: 8 }, // mat4 needs 4-row stride
 );
+```
+
+### Relational Assertions
+
+```ts
+await gpuTest("relational", ({ greaterThan, lessThan }) => {
+  greaterThan(float(5), float(3));
+  lessThan(float(3), float(5));
+});
 ```
 
 ### CPU Constants
@@ -134,3 +145,8 @@ gpuTest("mismatch", ({ closeRel }) => {
   closeRel(float(1.001), float(1), 1e-6);
 });
 ```
+
+## See Also
+
+- [gpuFuzzTest](./gpu-fuzz-test.md) — Fuzz testing with deterministic inputs
+- [rawComputeTest](./raw-compute.md) — Low-level GPU compute control
