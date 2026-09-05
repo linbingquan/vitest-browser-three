@@ -3,7 +3,12 @@
 Tests in this directory are adapted from three.js's GPU-native TSL unit
 tests (`test/unit/addons/tsl/*.tests.js`, MIT license). They serve as
 **API validation examples** — using upstream test logic to verify that this
-library's `gpuTest` / `rawComputeTest` APIs correctly exercise the GPU.
+library's APIs correctly exercise the GPU.
+
+Files are organized by the library API they validate:
+
+- `gpu-test.test.ts` — validates `gpuTest` (batch assertions)
+- `raw-compute.test.ts` — validates `rawComputeTest` and integer readback helpers
 
 This is **not** a full migration of upstream tests. It is a curated snapshot:
 select cases are ported when they exercise an API path we need to validate.
