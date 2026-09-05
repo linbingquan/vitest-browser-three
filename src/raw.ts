@@ -74,7 +74,15 @@ export async function rawComputeTest(
     return;
   }
 
-  const renderer = await getRenderer(backend);
+  let renderer: WebGPURenderer;
+  try {
+    renderer = await getRenderer(backend);
+  } catch {
+    console.warn(
+      `[vitest-browser-three] rawComputeTest "${name}": failed to get "${backend}" renderer.`,
+    );
+    return;
+  }
 
   if (requiredFeature !== undefined) {
     // hasFeature may not exist on WebGL fallback renderer
@@ -101,10 +109,8 @@ export async function rawComputeTest(
  * values exactly.
  *
  * @param renderer - The WebGPURenderer instance
- * @param buffer - The underlying buffer. Can be:
- *   - A `StorageInstancedBufferAttribute` (TSL storage node's `.value`)
- *   - A raw GPUBuffer (native WebGPU API)
- *   - A `BufferAttribute` from three.js
+ * @param buffer - A `StorageInstancedBufferAttribute` (TSL storage node's `.value`)
+ *   or a `BufferAttribute` from three.js
  * @returns Promise resolving to Uint32Array containing the buffer data
  *
  * @example
@@ -120,7 +126,7 @@ export async function readUintBuffer(
   buffer: StorageInstancedBufferAttribute | BufferAttribute,
 ): Promise<Uint32Array> {
   const arrayBuffer = await renderer.getArrayBufferAsync(buffer as BufferAttribute);
-  return new Uint32Array(arrayBuffer.slice(0));
+  return new Uint32Array(arrayBuffer);
 }
 
 /**
@@ -131,10 +137,8 @@ export async function readUintBuffer(
  * integer values exactly.
  *
  * @param renderer - The WebGPURenderer instance
- * @param buffer - The underlying buffer. Can be:
- *   - A `StorageInstancedBufferAttribute` (TSL storage node's `.value`)
- *   - A raw GPUBuffer (native WebGPU API)
- *   - A `BufferAttribute` from three.js
+ * @param buffer - A `StorageInstancedBufferAttribute` (TSL storage node's `.value`)
+ *   or a `BufferAttribute` from three.js
  * @returns Promise resolving to Int32Array containing the buffer data
  *
  * @example
@@ -150,5 +154,5 @@ export async function readIntBuffer(
   buffer: StorageInstancedBufferAttribute | BufferAttribute,
 ): Promise<Int32Array> {
   const arrayBuffer = await renderer.getArrayBufferAsync(buffer as BufferAttribute);
-  return new Int32Array(arrayBuffer.slice(0));
+  return new Int32Array(arrayBuffer);
 }
