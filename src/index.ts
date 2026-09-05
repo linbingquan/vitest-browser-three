@@ -14,6 +14,13 @@ export {
 export { gpuFuzzTest, type FuzzSpec } from "./pure.ts";
 export { disposeRenderer, isBackendAvailable, type BackendName } from "./pure.ts";
 export { configureGPU } from "./pure.ts";
+export {
+  rawComputeTest,
+  type RawComputeTestOptions,
+  type RawComputeTestContext,
+  readUintBuffer,
+  readIntBuffer,
+} from "./pure.ts";
 
 afterAll(async () => {
   await disposeRenderer();

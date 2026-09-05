@@ -8,3 +8,10 @@ export {
 export { gpuFuzzTest, type FuzzSpec } from "./fuzz.ts";
 export { disposeRenderer, isBackendAvailable, type BackendName } from "./context.ts";
 export { configureGPU } from "./config.ts";
+export {
+  rawComputeTest,
+  type RawComputeTestOptions,
+  type RawComputeTestContext,
+  readUintBuffer,
+  readIntBuffer,
+} from "./raw.ts";
