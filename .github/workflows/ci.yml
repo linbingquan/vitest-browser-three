@@ -13,7 +13,7 @@ jobs:
 
       # Installs Vite+ (vp) globally, resolves the version from the project's
       # lockfile, sets up Node.js LTS, caches dependencies, and runs vp install.
-      - uses: voidzero-dev/setup-vp@v1.17.0
+      - uses: voidzero-dev/setup-vp@v1.19.0
         with:
           node-version: "lts"
           cache: true
