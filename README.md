@@ -40,6 +40,7 @@ await gpuFuzzTest("sin", {
   test: (x) => sin(x),
   expected: (x) => Math.sin(x),
   tolerance: 1e-3,
+  absolute: true, // for periodic functions near zero crossings
 });
 ```
 
@@ -47,7 +48,7 @@ await gpuFuzzTest("sin", {
 
 - **Batch assertions**: One compute dispatch per test suite
 - **Multi-backend**: WebGPU with WebGL2 fallback, soft-skipped when unavailable
-- **Fuzz testing**: Deterministic inputs with CPU reference comparison
+- **Fuzz testing**: Deterministic inputs with CPU reference comparison, supporting both relative and absolute tolerance
 - **Type-safe**: Full TypeScript support
 
 ## Development
