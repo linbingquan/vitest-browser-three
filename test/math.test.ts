@@ -76,7 +76,8 @@ describe("gpuFuzzTest", () => {
       input: (i) => (i / 128) * Math.PI * 2,
       test: (x) => sin(x),
       expected: (x) => Math.sin(x),
-      tolerance: 1e-3, // SwiftShader fast-math sin has ~1e-5 relative error
+      tolerance: 1e-3,
+      absolute: true, // sin(π) differs between f32 (GPU) and f64 (CPU) precision
     });
   });
 

@@ -5,7 +5,7 @@ import { getRenderer, isBackendAvailable, type BackendName } from "./context.ts"
 import { getDefaultBackends } from "./config.ts";
 import { readStorage } from "./readback.ts";
 import { DEFAULT_TOLERANCE, toVec4 } from "./assert.ts";
-import { closeRelCompare } from "./assert/compare.ts";
+import { closeRelCompare, closeAbsCompare } from "./assert/compare.ts";
 
 /**
  * Deterministic fuzz-test spec: every instance gets one scalar input derived
@@ -21,8 +21,19 @@ export interface FuzzSpec {
   test: (x: Node<"float">) => Node;
   /** CPU-side reference value(s) for each instance. */
   expected: (x: number, instance: number) => number | number[];
-  /** Relative tolerance; standard formula: |a - e| <= tolerance * max(|a|, |e|, 1e-12). */
+  /**
+   * Tolerance for comparisons. When `absolute` is true, uses absolute tolerance
+   * (`|a - e| <= tolerance`); otherwise uses relative tolerance
+   * (`|a - e| <= tolerance * max(|a|, |e|, 1e-12)`).
+   */
   tolerance?: number;
+  /**
+   * If true, use absolute tolerance (`|a - e| <= tolerance`) instead of the
+   * default relative tolerance. Use this for periodic functions like sin/cos
+   * where f32 and f64 precision differences can cause relative tolerance to
+   * fail near zero crossings (e.g. sin(π) differs between f32 and f64).
+   */
+  absolute?: boolean;
   /**
    * Backends to run this suite against. Defaults to configureGPU's setting,
    * or ['webgpu', 'webgl']. Unavailable backends are soft-skipped.
@@ -50,8 +61,9 @@ function padExpected(value: number | number[]): [number, number, number, number]
 
 /** Implementation of gpuFuzzTest for a single backend; see gpuFuzzTest for contract. */
 async function runFuzzBackend(name: string, spec: FuzzSpec, backend: BackendName): Promise<void> {
-  const { instances, input, test, expected } = spec;
+  const { instances, input, test, expected, absolute } = spec;
   const tolerance = spec.tolerance ?? DEFAULT_TOLERANCE;
+  const compare = absolute ? closeAbsCompare : closeRelCompare;
 
   if (!Number.isInteger(instances) || instances < 1) {
     throw new Error(
@@ -105,7 +117,7 @@ async function runFuzzBackend(name: string, spec: FuzzSpec, backend: BackendName
     for (let c = 0; c < 4; c++) {
       const a = actualData[i * 4 + c];
       const e = expectedData[i * 4 + c];
-      if (!closeRelCompare(a, e, tolerance)) {
+      if (!compare(a, e, tolerance)) {
         failures.push(
           `instance ${i} (input ${formatFloat(inputValues[i])}), component ${c}: ` +
             `${formatFloat(a)} !== ${formatFloat(e)} (tolerance ${tolerance})`,

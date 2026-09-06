@@ -39,6 +39,13 @@ export function closeRelCompare(actual: number, expected: number, tolerance: num
   );
 }
 
+/**
+ * Absolute tolerance comparison. Returns true iff |actual - expected| <= tolerance.
+ */
+export function closeAbsCompare(actual: number, expected: number, tolerance: number): boolean {
+  return Math.abs(actual - expected) <= tolerance;
+}
+
 export interface ComparisonResult {
   index: number;
   actual: number;

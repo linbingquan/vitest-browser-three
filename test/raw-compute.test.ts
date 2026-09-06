@@ -18,6 +18,7 @@ import {
   bitNot,
 } from "three/tsl";
 import { rawComputeTest, readUintBuffer, readIntBuffer } from "../src/index.ts";
+import type { WebGPURenderer } from "three/webgpu";
 
 const WORKGROUP_SIZE = 8;
 
@@ -29,24 +30,14 @@ function makeIntCounter() {
   return instancedArray(1, "int").toAtomic();
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function seedUint(
-  renderer: import("three/webgpu").WebGPURenderer,
-  counter: any,
-  value: number,
-) {
+async function seedUint(renderer: WebGPURenderer, counter: any, value: number) {
   const kernel = Fn(() => {
     atomicStore(counter.element(uint(0)), uint(value));
   })().compute(1);
   await renderer.computeAsync(kernel);
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function seedInt(
-  renderer: import("three/webgpu").WebGPURenderer,
-  counter: any,
-  value: number,
-) {
+async function seedInt(renderer: WebGPURenderer, counter: any, value: number) {
   const kernel = Fn(() => {
     atomicStore(counter.element(int(0)), int(value));
   })().compute(1);
