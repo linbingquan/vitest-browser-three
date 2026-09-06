@@ -345,24 +345,7 @@ export interface GPURunOptions {
   backends?: BackendName[];
 }
 
-/**
- * Run TSL assertions on the GPU via a single batched compute dispatch.
- *
- * Each assertion occupies a fixed MAX_COLUMNS-row stride; one extra row is
- * reserved for a canary that detects kernels which never ran (shader build
- * failures are reported by WebGPURenderer only asynchronously, so without
- * the canary all buffers read back zero and every assertion silently passes
- * as 0-vs-0). All rows are written via bare `instanceIndex` addressing
- * guarded by `If(instanceIndex.equal(row), ...)` — the only write pattern
- * the WebGL2 transform-feedback fallback supports. Results are read back
- * once and compared on the CPU.
- *
- * Supports scalars, vecN and mat3/mat4. Type resolution happens at shader
- * build time from the real node types; comparing mismatched types throws.
- *
- * Note: `fn` is executed inside the kernel's graph-build callback (it may be
- * invoked more than once during multi-stage builds; it must be idempotent).
- */
+/** Implementation of gpuTest for a single backend; see gpuTest for contract. */
 async function runBackend(
   name: string,
   fn: (assert: GPUAssert) => void,
@@ -502,25 +485,27 @@ async function runBackend(
 }
 
 /**
- * Run TSL assertions on the GPU via a single batched compute dispatch.
+ * Run TSL assertions on the GPU, batching them into one compute dispatch
+ * per requested backend.
  *
- * Each assertion occupies a fixed MAX_COLUMNS-row stride; one extra row is
- * reserved for a canary that detects kernels which never ran (shader build
- * failures are reported by WebGPURenderer only asynchronously, so without
- * the canary all buffers read back zero and every assertion silently passes
- * as 0-vs-0). All rows are written via bare `instanceIndex` addressing
- * guarded by `If(instanceIndex.equal(row), ...)` — the only write pattern
- * the WebGL2 transform-feedback fallback supports. Results are read back
- * once and compared on the CPU.
+ * Supports scalars, vecN, mat3 and mat4. `fn` is called during graph build
+ * and must be idempotent (it may run more than once). Unavailable backends
+ * are soft-skipped; if none are available, the test fails.
  *
- * Supports scalars, vecN and mat3/mat4. Type resolution happens at shader
- * build time from the real node types; comparing mismatched types throws.
+ * @param name - Test name used in error messages.
+ * @param fn - Callback receiving the assertion API. May be invoked multiple
+ *   times; do not rely on call count or mutate external state.
+ * @param options - Optional configuration. See {@link GPURunOptions}.
+ * @returns Resolves after all assertions pass on every available backend;
+ *   rejects on first failure.
  *
- * The suite runs once per requested backend (see GPURunOptions.backends);
- * unavailable backends are soft-skipped with a warning.
- *
- * Note: `fn` is executed inside the kernel's graph-build callback (it may be
- * invoked more than once during multi-stage builds; it must be idempotent).
+ * @example
+ * ```ts
+ * await gpuTest('vec4 add', ({ eq, closeAbs }) => {
+ *   eq(vec4(1, 2, 3, 4).add(vec4(10, 20, 30, 40)), vec4(11, 22, 33, 44));
+ *   closeAbs(vec2(1, 2).mul(3), vec2(3, 6), 1e-6);
+ * });
+ * ```
  */
 export async function gpuTest(
   name: string,

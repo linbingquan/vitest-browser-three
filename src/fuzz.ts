@@ -47,15 +47,7 @@ function padExpected(value: number | number[]): [number, number, number, number]
   return [value[0], value[1], value[2], value[3]];
 }
 
-/**
- * Fuzz a TSL expression across many instances in a single compute pass.
- *
- * Inputs are generated deterministically on the CPU (pure function of the
- * instance index), uploaded through a storage buffer, and fed to `spec.test`
- * as a float node. Reference values are computed on the CPU and compared
- * component-wise after GPU readback — mirroring gpuTest's toVec4()
- * conversion semantics.
- */
+/** Implementation of gpuFuzzTest for a single backend; see gpuFuzzTest for contract. */
 async function runFuzzBackend(name: string, spec: FuzzSpec, backend: BackendName): Promise<void> {
   const { instances, input, test, expected } = spec;
   const tolerance = spec.tolerance ?? DEFAULT_TOLERANCE;
@@ -135,9 +127,27 @@ async function runFuzzBackend(name: string, spec: FuzzSpec, backend: BackendName
 }
 
 /**
- * Fuzz a TSL expression across many instances in a single compute dispatch
- * per requested backend. Unavailable backends are soft-skipped with a
- * warning; if none are available the test fails. See {@link FuzzSpec}.
+ * Run a deterministic fuzz test across many instances on each requested backend.
+ *
+ * Inputs are generated on the CPU with `spec.input(i)`, uploaded as floats,
+ * and compared against `spec.expected` after GPU readback. Unavailable
+ * backends are soft-skipped; if none are available, the test fails.
+ *
+ * @param name - Test name used in error messages.
+ * @param spec - Fuzz specification. See {@link FuzzSpec}.
+ * @returns Resolves after all instances pass on every available backend;
+ *   rejects on first failure.
+ *
+ * @example
+ * ```ts
+ * await gpuFuzzTest('sin²x + cos²x ≈ 1', {
+ *   instances: 1024,
+ *   input: (i) => (i / 1024) * Math.PI * 2,
+ *   test: (x) => sin(x).pow(2).add(cos(x).pow(2)),
+ *   expected: () => 1,
+ *   tolerance: 1e-6,
+ * });
+ * ```
  */
 export async function gpuFuzzTest(name: string, spec: FuzzSpec): Promise<void> {
   const requested = spec.backends ?? getDefaultBackends();

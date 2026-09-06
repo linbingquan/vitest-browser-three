@@ -48,12 +48,17 @@ export interface RawComputeTestContext {
  * If the backend is unavailable or the required feature is not supported,
  * the test is soft-skipped with a warning (test passes, not fails).
  *
+ * @param name - Test name used in skip/failure messages.
+ * @param options - Backend and required feature. See {@link RawComputeTestOptions}.
+ * @param fn - Callback receiving the ready renderer; may be async.
+ * @returns Resolves after the callback completes, or after a soft-skip.
+ *
  * @example
  * ```ts
  * it('atomic counter', async () => {
  *   await rawComputeTest('atomic add', { backend: 'webgpu' }, async ({ renderer }) => {
  *     // Build your own TSL kernel and dispatch
- *     const result = await renderer.computeAsync(kernel);
+ *     await renderer.computeAsync(kernel);
  *     const data = await readUintBuffer(renderer, buffer.value);
  *     expect(data[0]).toBe(42);
  *   });
@@ -109,8 +114,7 @@ export async function rawComputeTest(
  * values exactly.
  *
  * @param renderer - The WebGPURenderer instance
- * @param buffer - A `StorageInstancedBufferAttribute` (TSL storage node's `.value`)
- *   or a `BufferAttribute` from three.js
+ * @param buffer - Storage buffer attribute whose data is read back.
  * @returns Promise resolving to Uint32Array containing the buffer data
  *
  * @example
@@ -137,8 +141,7 @@ export async function readUintBuffer(
  * integer values exactly.
  *
  * @param renderer - The WebGPURenderer instance
- * @param buffer - A `StorageInstancedBufferAttribute` (TSL storage node's `.value`)
- *   or a `BufferAttribute` from three.js
+ * @param buffer - Storage buffer attribute whose data is read back.
  * @returns Promise resolving to Int32Array containing the buffer data
  *
  * @example
