@@ -21,9 +21,19 @@ SwiftShader (software renderer used in CI/containers) has reduced precision for 
 ```ts
 // SwiftShader fast-math sin has ~1e-5 relative error
 await gpuFuzzTest("sin", {
-  tolerance: 1e-3, // Use 1e-3 to 1e-4 for trig functions
+  tolerance: 1e-3, // Use 1e-3 for trig functions (accounts for platform differences)
 });
 ```
+
+**Why use 1e-3 instead of 1e-5?**
+
+Tolerance must account for:
+
+1. **Single operation error**: SwiftShader fast-math sin ≈ 1e-5 relative error
+2. **Accumulated errors**: Multiple operations compound the error
+3. **Platform variance**: Hardware GPUs may differ slightly from CPU reference
+
+Start with 1e-3 for trig functions, or 1e-4 for simple arithmetic. If tests are flaky, relax the tolerance; if they pass consistently, you can try tightening it.
 
 ### Integer Comparisons
 

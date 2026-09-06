@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { float, sin, cos, vec2, vec3, vec4, mat4 } from "three/tsl";
+import { float, sin, cos, vec2, vec3, vec4, mat3, mat4 } from "three/tsl";
 import { blendColor } from "three/tsl";
 import { Matrix4 } from "three/webgpu";
 import { gpuTest, gpuFuzzTest } from "../src/index.ts";
@@ -178,6 +178,20 @@ describe("stage-2: type resolution, matrices, relational assertions", () => {
     await gpuTest("eq-ok", ({ eq }) => {
       eq(float(2).mul(3), float(6));
     });
+  });
+
+  it("mat3 rotation matches CPU reference", async () => {
+    const angle = Math.PI / 4;
+    const c = Math.cos(angle);
+    const s = Math.sin(angle);
+    await gpuTest(
+      "mat3-rotation",
+      ({ closeRel }) => {
+        // mat3 is 3 columns of vec3; TSL constructor is column-major like mat4
+        closeRel(mat3(c, s, 0, -s, c, 0, 0, 0, 1), [c, s, 0, -s, c, 0, 0, 0, 1], 1e-6);
+      },
+      { maxAssertions: 4 }, // mat3 needs 3 rows, one extra row for safety
+    );
   });
 
   it("mat4 rotation matches CPU reference", async () => {

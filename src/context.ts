@@ -7,6 +7,7 @@ const BACKEND_OPTIONS: Record<BackendName, { forceWebGL?: boolean }> = {
   webgl: { forceWebGL: true },
 };
 
+/** @internal Per-backend renderer caches. */
 interface BackendEntry {
   promise?: Promise<WebGPURenderer>;
   failed?: boolean;
@@ -14,6 +15,7 @@ interface BackendEntry {
 
 // Per-backend renderer caches. A failed init is remembered (`failed`) so
 // probes don't retry a backend that can't work in this environment.
+/** @internal Per-backend renderer caches. */
 const renderers: Record<BackendName, BackendEntry> = {
   webgpu: {},
   webgl: {},

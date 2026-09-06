@@ -4,7 +4,8 @@ import { Fn, instanceIndex, storage, float } from "three/tsl";
 import { getRenderer, isBackendAvailable, type BackendName } from "./context.ts";
 import { getDefaultBackends } from "./config.ts";
 import { readStorage } from "./readback.ts";
-import { DEFAULT_TOLERANCE, toVec4, closeRelCompare } from "./assert.ts";
+import { DEFAULT_TOLERANCE, toVec4 } from "./assert.ts";
+import { closeRelCompare } from "./assert/compare.ts";
 
 /**
  * Deterministic fuzz-test spec: every instance gets one scalar input derived

@@ -10,12 +10,12 @@ gpuTest(name: string, fn: (ctx: GpuTestContext) => void, options?: GpuTestOption
 
 ## Parameters
 
-| Parameter               | Type            | Description                          |
-| ----------------------- | --------------- | ------------------------------------ |
-| `name`                  | `string`        | Test name                            |
-| `fn`                    | `(ctx) => void` | Callback receiving assertion context |
-| `options.backends`      | `BackendName[]` | Backend(s) to test against           |
-| `options.maxAssertions` | `number`        | Max assertions per test (default: 4) |
+| Parameter               | Type            | Description                                                                                                                  |
+| ----------------------- | --------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `name`                  | `string`        | Test name                                                                                                                    |
+| `fn`                    | `(ctx) => void` | Callback receiving assertion context                                                                                         |
+| `options.backends`      | `BackendName[]` | Backend(s) to test against                                                                                                   |
+| `options.maxAssertions` | `number`        | Max assertions per test (default: 64). Each mat4 assertion occupies 4 rows, so `maxAssertions >= N*4+1` (+1 for canary row). |
 
 ## Assertion Context
 

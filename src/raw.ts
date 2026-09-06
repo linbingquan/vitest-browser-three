@@ -11,6 +11,7 @@
  */
 import type { WebGPURenderer, StorageInstancedBufferAttribute } from "three/webgpu";
 import type { BufferAttribute } from "three";
+import { readBufferAs } from "./readback.ts";
 import { getRenderer, isBackendAvailable, type BackendName } from "./context.ts";
 
 export interface RawComputeTestOptions {
@@ -129,8 +130,7 @@ export async function readUintBuffer(
   renderer: WebGPURenderer,
   buffer: StorageInstancedBufferAttribute | BufferAttribute,
 ): Promise<Uint32Array> {
-  const arrayBuffer = await renderer.getArrayBufferAsync(buffer as BufferAttribute);
-  return new Uint32Array(arrayBuffer.slice(0));
+  return readBufferAs(renderer, buffer, Uint32Array);
 }
 
 /**
@@ -156,6 +156,5 @@ export async function readIntBuffer(
   renderer: WebGPURenderer,
   buffer: StorageInstancedBufferAttribute | BufferAttribute,
 ): Promise<Int32Array> {
-  const arrayBuffer = await renderer.getArrayBufferAsync(buffer as BufferAttribute);
-  return new Int32Array(arrayBuffer.slice(0));
+  return readBufferAs(renderer, buffer, Int32Array);
 }

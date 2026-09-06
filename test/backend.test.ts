@@ -32,16 +32,12 @@ describe("stage-3: multi-backend support", () => {
   });
 
   it("fails when no requested backend is available", async () => {
+    // Empty backends array is the only guaranteed-unavailable configuration
+    // (no valid backend name can make it past configureGPU validation).
+    // This tests the "no backends available" path, not the "invalid name" path.
     await expect(
-      gpuTest(
-        "unavailable-backend",
-        ({ eq }) => eq(float(1), float(1)),
-        // "webgl" is available in this environment, so use an invalid request:
-        // an empty list is the only guaranteed-unavailable configuration.
-        // Instead assert configureGPU validation below.
-        { backends: [] as never[] },
-      ),
-    ).rejects.toThrow();
+      gpuTest("unavailable-backend", ({ eq }) => eq(float(1), float(1)), { backends: [] }),
+    ).rejects.toThrow(/no requested GPU backends/);
   });
 
   it("configureGPU validates its options", () => {

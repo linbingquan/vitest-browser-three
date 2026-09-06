@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { closeRelCompare } from "../src/assert.ts";
+import { closeRelCompare } from "../src/assert/compare.ts";
 
 describe("closeRelCompare", () => {
   it("passes when actual equals expected", () => {

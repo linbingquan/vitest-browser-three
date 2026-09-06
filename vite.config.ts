@@ -7,7 +7,7 @@ export default defineConfig({
       enabled: true,
       headless: true,
       screenshotFailures: false,
-      // Cast: vite-plus' defineConfig types lag behind vitest 4's provider factory API.
+      // vite-plus types lag behind vitest 4's provider factory API
       provider: playwright({
         launchOptions: {
           // Default to software rendering (works in restricted containers).
@@ -24,9 +24,9 @@ export default defineConfig({
           // hides all non-NVIDIA Vulkan ICDs and breaks ANGLE/SwANGLE init
           // (getContext("webgl2") returns null). Drop the restriction so the
           // loader can find any usable ICD (e.g. mesa lavapipe).
-          env: { ...process.env, VK_LOADER_DRIVERS_SELECT: undefined },
+          env: { ...process.env, VK_LOADER_DRIVERS_SELECT: "" },
         },
-      }) as never,
+      }),
       instances: [{ browser: "chromium" }],
     },
   },

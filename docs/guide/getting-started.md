@@ -17,7 +17,7 @@ pnpm add -D @vitest/browser @vitest/browser-playwright playwright vitest
 Add browser mode configuration to `vite.config.ts`:
 
 ```ts
-import { defineConfig } from "vitest/config";
+import { defineConfig } from "vite-plus";
 import { playwright } from "@vitest/browser-playwright";
 
 export default defineConfig({
@@ -33,7 +33,7 @@ export default defineConfig({
               ? ["--use-angle=vulkan"]
               : ["--enable-features=Vulkan", "--use-angle=swiftshader"]),
           ],
-          env: { ...process.env, VK_LOADER_DRIVERS_SELECT: undefined },
+          env: { ...process.env, VK_LOADER_DRIVERS_SELECT: "" },
         },
       }),
       instances: [{ browser: "chromium" }],
@@ -41,6 +41,8 @@ export default defineConfig({
   },
 });
 ```
+
+> If you're using standard `vitest/config` instead of `vite-plus`, replace the import accordingly.
 
 ## Write Your First Test
 

@@ -40,7 +40,13 @@ console.log(data[0]); // 64
 
 **Returns**: `Promise<Uint32Array>`
 
-**Note**: Pass `buffer.value` explicitly (the underlying `StorageInstancedBufferAttribute`), not the TSL node.
+**Note**: Pass `buffer.value` explicitly (the underlying `StorageInstancedBufferAttribute`), not the TSL node. The `.value` property provides the actual attribute that the GPU backend can read from.
+
+```ts
+const buffer = instancedArray(1, "uint").toAtomic();
+// buffer is a TSL node; buffer.value is the StorageInstancedBufferAttribute
+const data = await readUintBuffer(renderer, buffer.value);
+```
 
 ## readIntBuffer
 

@@ -21,8 +21,10 @@ GPU-native assertions for three.js TSL expressions in Vitest Browser Mode.
 import { gpuTest } from "vitest-browser-three";
 import { float, sin, vec3 } from "three/tsl";
 
-await gpuTest("vector math", ({ eq, closeRel }) => {
-  eq(float(2).add(3), float(5));
-  closeRel(sin(float(Math.PI / 2)), float(1), 1e-3);
+it("vector math", async () => {
+  await gpuTest("vector math", ({ eq, closeRel }) => {
+    eq(float(2).add(3), float(5));
+    closeRel(sin(float(Math.PI / 2)), float(1), 1e-3);
+  });
 });
 ```

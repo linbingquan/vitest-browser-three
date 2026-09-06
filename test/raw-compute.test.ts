@@ -1,5 +1,6 @@
+// NOTE: WebGL2 backend does not support atomic operations in storage buffers,
+// so these tests are intentionally WebGPU-only.
 // Reference: three.js test/unit/addons/tsl/GPUAtomicsStorage.tests.js (MIT)
-// Ported as API validation example for rawComputeTest.
 
 import { describe, expect, it } from "vitest";
 import {
@@ -28,14 +29,24 @@ function makeIntCounter() {
   return instancedArray(1, "int").toAtomic();
 }
 
-async function seedUint(renderer: any, counter: any, value: number) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function seedUint(
+  renderer: import("three/webgpu").WebGPURenderer,
+  counter: any,
+  value: number,
+) {
   const kernel = Fn(() => {
     atomicStore(counter.element(uint(0)), uint(value));
   })().compute(1);
   await renderer.computeAsync(kernel);
 }
 
-async function seedInt(renderer: any, counter: any, value: number) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function seedInt(
+  renderer: import("three/webgpu").WebGPURenderer,
+  counter: any,
+  value: number,
+) {
   const kernel = Fn(() => {
     atomicStore(counter.element(int(0)), int(value));
   })().compute(1);
