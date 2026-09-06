@@ -4,20 +4,18 @@
 
 ```bash
 # Install peer dependencies
-pnpm add three @types/three
+npm install three @types/three
 
 # Install dev dependencies
-pnpm add -D @vitest/browser @vitest/browser-playwright playwright vitest
+npm install -D @vitest/browser @vitest/browser-playwright playwright vitest
 ```
-
-> If you use Vite+, you can also use `vp add` instead of `pnpm add`.
 
 ## Configure Vitest Browser Mode
 
 Add browser mode configuration to `vite.config.ts`:
 
 ```ts
-import { defineConfig } from "vite-plus";
+import { defineConfig } from "vitest/config";
 import { playwright } from "@vitest/browser-playwright";
 
 export default defineConfig({
@@ -60,11 +58,14 @@ await gpuTest("vector math", ({ eq, closeRel }) => {
 ## Run Tests
 
 ```bash
-# Software rendering (default, works in containers/CI)
-vp test
+# Use Vitest CLI directly
+npx vitest
+
+# Or if you defined a "test" script in package.json
+npm test
 
 # Hardware rendering (requires GPU with Vulkan)
-GPU_RENDER=hw vp test
+GPU_RENDER=hw npx vitest
 ```
 
 ## Next Steps
