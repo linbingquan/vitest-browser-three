@@ -51,14 +51,6 @@ await gpuFuzzTest("sin", {
 - **Fuzz testing**: Deterministic inputs with CPU reference comparison, supporting both relative and absolute tolerance
 - **Type-safe**: Full TypeScript support
 
-## Development
-
-```bash
-pnpm install   # install dependencies
-pnpm check     # format + lint + typecheck
-pnpm test      # browser-mode tests (requires playwright chromium)
-```
-
 ## Compatibility
 
 This library is developed and tested against `three@0.185.x` and `vitest@4.x`.
@@ -71,7 +63,9 @@ It declares `three >=0.185.0` and `vitest >=4.0.0` as peer dependencies to allow
 
 ## Contributing
 
-Contributions are welcome! See [docs/DECISIONS.md](./docs/DECISIONS.md) for design decisions.
+Contributions are welcome! See [CONTRIBUTING.md](./CONTRIBUTING.md) for development setup, testing conventions, and release process.
+
+Design decisions are documented in [docs/DECISIONS.md](./docs/DECISIONS.md).
 
 ## License
 

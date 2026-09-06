@@ -1,5 +1,13 @@
 # Contributing
 
+## Development Setup
+
+```bash
+pnpm install   # install dependencies
+pnpm check     # format + lint + typecheck
+pnpm test      # browser-mode tests (requires playwright chromium)
+```
+
 ## Testing conventions
 
 Tests that import from the default entry (`../src/index.ts`) get per-file GPU
