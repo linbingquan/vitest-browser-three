@@ -20,7 +20,7 @@ export interface FuzzSpec {
   test: (x: Node<"float">) => Node;
   /** CPU-side reference value(s) for each instance. */
   expected: (x: number, instance: number) => number | number[];
-  /** Relative tolerance; scaled by max(1, |expected|). */
+  /** Relative tolerance; standard formula: |a - e| <= tolerance * max(|a|, |e|, 1e-12). */
   tolerance?: number;
   /**
    * Backends to run this suite against. Defaults to configureGPU's setting,
@@ -104,7 +104,7 @@ async function runFuzzBackend(name: string, spec: FuzzSpec, backend: BackendName
     for (let c = 0; c < 4; c++) {
       const a = actualData[i * 4 + c];
       const e = expectedData[i * 4 + c];
-      if (Math.abs(a - e) > tolerance * Math.max(1, Math.abs(e))) {
+      if (Math.abs(a - e) > tolerance * Math.max(Math.abs(a), Math.abs(e), 1e-12)) {
         failures.push(
           `instance ${i} (input ${formatFloat(inputValues[i])}), component ${c}: ` +
             `${formatFloat(a)} !== ${formatFloat(e)} (tolerance ${tolerance})`,

@@ -130,7 +130,7 @@ export async function readUintBuffer(
   buffer: StorageInstancedBufferAttribute | BufferAttribute,
 ): Promise<Uint32Array> {
   const arrayBuffer = await renderer.getArrayBufferAsync(buffer as BufferAttribute);
-  return new Uint32Array(arrayBuffer);
+  return new Uint32Array(arrayBuffer.slice(0));
 }
 
 /**
@@ -157,5 +157,5 @@ export async function readIntBuffer(
   buffer: StorageInstancedBufferAttribute | BufferAttribute,
 ): Promise<Int32Array> {
   const arrayBuffer = await renderer.getArrayBufferAsync(buffer as BufferAttribute);
-  return new Int32Array(arrayBuffer);
+  return new Int32Array(arrayBuffer.slice(0));
 }
