@@ -16,7 +16,8 @@ interface GpuFuzzSpec {
   input: (i: number) => number; // CPU input value generator
   test: (x: Node) => Node; // TSL expression under test
   expected: (x: number) => number | number[]; // CPU reference value
-  tolerance?: number; // Relative tolerance (default: 1e-6)
+  tolerance?: number; // Tolerance (default: 1e-6)
+  absolute?: boolean; // Use absolute tolerance instead of relative (default: false)
 }
 ```
 
@@ -33,9 +34,14 @@ await gpuFuzzTest("sin", {
   input: (i) => (i / 128) * Math.PI * 2,
   test: (x) => sin(x),
   expected: (x) => Math.sin(x),
-  tolerance: 1e-3, // SwiftShader fast-math sin has ~1e-5 error
+  tolerance: 1e-3,
+  absolute: true, // Use absolute tolerance for periodic functions
 });
 ```
+
+When to use `absolute: true`:
+
+For periodic functions like `sin` and `cos`, f32 (GPU) and f64 (CPU) precision differences can cause relative tolerance to fail near zero crossings. For example, `sin(f32(π))` returns `0.0` on GPU but `Math.sin(f32(π))` returns `-8.74e-8` due to double precision computation. Using absolute tolerance avoids this issue.
 
 ### Identity Function
 
@@ -71,6 +77,19 @@ await gpuFuzzTest("sin-cos-identity", {
       .add(cos(x).mul(cos(x))),
   expected: () => 1,
   tolerance: 1e-3,
+});
+```
+
+### Absolute Tolerance for Cos
+
+```ts
+await gpuFuzzTest("cos", {
+  instances: 64,
+  input: (i) => (i / 64) * Math.PI * 2,
+  test: (x) => cos(x),
+  expected: (x) => Math.cos(x),
+  tolerance: 1e-4,
+  absolute: true,
 });
 ```
 

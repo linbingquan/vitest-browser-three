@@ -30,14 +30,22 @@ function makeIntCounter() {
   return instancedArray(1, "int").toAtomic();
 }
 
-async function seedUint(renderer: WebGPURenderer, counter: any, value: number) {
+async function seedUint(
+  renderer: WebGPURenderer,
+  counter: ReturnType<typeof makeUintCounter>,
+  value: number,
+) {
   const kernel = Fn(() => {
     atomicStore(counter.element(uint(0)), uint(value));
   })().compute(1);
   await renderer.computeAsync(kernel);
 }
 
-async function seedInt(renderer: WebGPURenderer, counter: any, value: number) {
+async function seedInt(
+  renderer: WebGPURenderer,
+  counter: ReturnType<typeof makeIntCounter>,
+  value: number,
+) {
   const kernel = Fn(() => {
     atomicStore(counter.element(int(0)), int(value));
   })().compute(1);
