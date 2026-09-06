@@ -153,3 +153,11 @@ instanceIndex 寻址、AssertWriteNode 式类型解析），不依赖深度耦�
   且难以推理。标准公式也是多数测试库做相对比较的惯例。
 - `closeAbs` 可用于显式绝对容差。
 - CPU 常量可直接传给 `closeAbs` / `closeRel`；内部经 `cpuToNode()` 转换。
+- `gpuFuzzTest` 默认使用相对容差（公式与 `closeRel` 相同）。
+  也接受 `absolute: true` 切换为绝对容差（`|a - e| <= tolerance`）。
+
+  动机：相对容差在周期性函数的零交叉点附近会失效。例如，`sin(f32(π))`
+  在 GPU 上返回接近 0 的值，而 `Math.sin(f32(π))` 在 CPU 上用 f64 返回
+  `-8.74e-8`。相对容差在零点附近的允许误差是 `tolerance * 1e-12`（由
+  `ZERO_FLOOR` 决定），远小于 f32/f64 的实际差异，导致误报。绝对容差
+  通过将原始差值与容差值比较来避免这个问题。

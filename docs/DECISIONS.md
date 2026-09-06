@@ -181,3 +181,14 @@ must be refactored into explicit parameters.
 - `closeAbs` remains available for explicit absolute tolerance.
 - CPU constants can be passed directly to `closeAbs` / `closeRel`; they are
   converted internally via `cpuToNode()`.
+- `gpuFuzzTest` defaults to relative tolerance (same formula as `closeRel`).
+  It also accepts `absolute: true` to switch to absolute tolerance
+  (`|a - e| <= tolerance`).
+
+  Motivation: relative tolerance fails near zero crossings for periodic
+  functions. For example, `sin(f32(π))` returns a value very close to 0 on
+  the GPU, while `Math.sin(f32(π))` returns `-8.74e-8` in f64 on the CPU.
+  With relative tolerance, the allowed error near zero is
+  `tolerance * 1e-12` (due to `ZERO_FLOOR`), which is far smaller than the
+  actual f32/f64 discrepancy, causing false failures. Absolute tolerance
+  avoids this by comparing the raw difference against the tolerance value.
