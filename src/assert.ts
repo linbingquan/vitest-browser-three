@@ -55,20 +55,29 @@ type AssertionKind =
 export const DEFAULT_TOLERANCE = 1e-6;
 
 /**
+ * Absolute tolerance floor for values near zero in relative comparisons.
+ * Stops the comparison from collapsing to exact equality (or division by
+ * zero) when both values are tiny, where the relative scale `max(|a|, |e|)`
+ * alone would force the allowed error toward zero and let floating-point
+ * noise flip the result.
+ */
+const ZERO_FLOOR = 1e-12;
+
+/**
  * Standard relative tolerance comparison.
- * Returns true iff `|actual - expected| <= tolerance * max(|actual|, |expected|, 1e-12)`.
+ * Returns true iff `|actual - expected| <= tolerance * max(|actual|, |expected|, ZERO_FLOOR)`.
  *
- * The `1e-12` floor prevents the comparison from collapsing to exact equality
- * (or division by zero) when both values are near zero; using `max(|a|, |e|)`
- * (rather than `|e|` alone) keeps the tolerance symmetric so that a tiny
- * `expected` does not make the test trivially easy to satisfy.
+ * Using `max(|a|, |e|)` (rather than `|e|` alone) keeps the tolerance
+ * symmetric so that a tiny `expected` does not make the test trivially easy
+ * to satisfy; `ZERO_FLOOR` covers the case where both values are near zero.
  *
  * Shared by `compareComponents` (gpuTest path) and `runFuzzBackend`
  * (gpuFuzzTest path) so both APIs use identical semantics.
  */
 export function closeRelCompare(actual: number, expected: number, tolerance: number): boolean {
   return (
-    Math.abs(actual - expected) <= tolerance * Math.max(Math.abs(actual), Math.abs(expected), 1e-12)
+    Math.abs(actual - expected) <=
+    tolerance * Math.max(Math.abs(actual), Math.abs(expected), ZERO_FLOOR)
   );
 }
 
