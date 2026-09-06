@@ -129,10 +129,10 @@ The library handles this automatically — the canary and data comparisons share
 
 ```bash
 # Software (SwiftShader, default)
-vp test
+npx vitest
 
 # Hardware (requires Vulkan GPU)
-GPU_RENDER=hw vp test
+GPU_RENDER=hw npx vitest
 ```
 
 ### Limitations of Hardware Mode

@@ -40,8 +40,6 @@ export default defineConfig({
 });
 ```
 
-> If you're using standard `vitest/config` instead of `vite-plus`, replace the import accordingly.
-
 ## Write Your First Test
 
 ```ts
