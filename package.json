@@ -72,8 +72,8 @@
     "vitest": "4.1.10"
   },
   "peerDependencies": {
-    "three": ">=0.185.0 <0.186.0",
-    "vitest": ">=4.0.0 <6.0.0"
+    "three": ">=0.185.0",
+    "vitest": ">=4.0.0"
   },
   "devEngines": {
     "packageManager": {

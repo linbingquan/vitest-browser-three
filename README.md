@@ -58,6 +58,16 @@ pnpm check     # format + lint + typecheck
 pnpm test      # browser-mode tests (requires playwright chromium)
 ```
 
+## Compatibility
+
+This library is developed and tested against `three@0.185.x` and `vitest@4.x`.
+
+It declares `three >=0.185.0` and `vitest >=4.0.0` as peer dependencies to allow flexibility. If you upgrade to a newer version and encounter issues:
+
+1. Check the runtime error messages for clues
+2. Consider pinning the dependency temporarily
+3. Open an issue with your three/vitest version if you believe it's a bug
+
 ## Contributing
 
 Contributions are welcome! See [docs/DECISIONS.md](./docs/DECISIONS.md) for design decisions.
