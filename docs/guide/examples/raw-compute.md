@@ -23,10 +23,12 @@ await rawComputeTest("atomic counter", { backend: "webgpu" }, async ({ renderer 
 ## Seeded Atomic Operations
 
 ```ts
+import type { WebGPURenderer } from "three/webgpu";
 import { rawComputeTest, readUintBuffer } from "vitest-browser-three";
 import { Fn, instancedArray, atomicStore, atomicSub, uint } from "three/tsl";
 
-async function seed(renderer: any, counter: any, value: number) {
+// counter is a TSL atomic node; its exact type depends on three version
+async function seed(renderer: WebGPURenderer, counter: any, value: number) {
   const kernel = Fn(() => {
     atomicStore(counter.element(uint(0)), uint(value));
   })().compute(1);
@@ -101,7 +103,7 @@ await rawComputeTest("atomic or", { backend: "webgpu" }, async ({ renderer }) =>
   await renderer.computeAsync(kernel);
 
   const data = await readUintBuffer(renderer, counter.value);
-  expect(data[0] >>> 0).toBe(0xffffffff); // All 32 bits set
+  expect(data[0]).toBe(0xffffffff); // All 32 bits set
 });
 ```
 
@@ -116,7 +118,7 @@ await rawComputeTest(
   },
   async ({ renderer }) => {
     // Test subgroup-specific features
-    // This test will be soft-skipped if subgroups are not supported
+    // This test will be soft-skipped if the subgroups feature is not supported
   },
 );
 ```
