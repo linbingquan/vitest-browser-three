@@ -1,6 +1,6 @@
 {
   "name": "vitest-browser-three",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "GPU-native assertions for three.js TSL expressions in Vitest Browser Mode.",
   "keywords": [
     "browser",
