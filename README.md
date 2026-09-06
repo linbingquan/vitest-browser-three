@@ -24,23 +24,26 @@ npm install -D @vitest/browser @vitest/browser-playwright playwright vitest
 ## Quick Start
 
 ```ts
+import { it } from "vitest";
 import { gpuTest, gpuFuzzTest } from "vitest-browser-three";
 import { float, sin } from "three/tsl";
 
-// Declarative assertions
-await gpuTest("scalar math", ({ eq, closeRel }) => {
-  eq(float(2).add(3), float(5));
-  closeRel(sin(float(Math.PI / 2)), 1, 1e-3);
+it("declarative assertions", async () => {
+  await gpuTest("scalar math", ({ eq, closeRel }) => {
+    eq(float(2).add(3), float(5));
+    closeRel(sin(float(Math.PI / 2)), 1, 1e-3);
+  });
 });
 
-// Fuzz testing
-await gpuFuzzTest("sin", {
-  instances: 128,
-  input: (i) => (i / 128) * Math.PI * 2,
-  test: (x) => sin(x),
-  expected: (x) => Math.sin(x),
-  tolerance: 1e-3,
-  absolute: true, // for periodic functions near zero crossings
+it("fuzz testing", async () => {
+  await gpuFuzzTest("sin", {
+    instances: 128,
+    input: (i) => (i / 128) * Math.PI * 2,
+    test: (x) => sin(x),
+    expected: (x) => Math.sin(x),
+    tolerance: 1e-3,
+    absolute: true,
+  });
 });
 ```
 
