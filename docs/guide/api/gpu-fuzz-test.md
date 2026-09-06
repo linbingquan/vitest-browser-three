@@ -5,13 +5,13 @@ Run fuzz tests against three.js TSL expressions with deterministic inputs.
 ## Signature
 
 ```ts
-gpuFuzzTest(name: string, spec: GpuFuzzSpec): Promise<void>
+gpuFuzzTest(name: string, spec: FuzzSpec): Promise<void>
 ```
 
 ## Parameters
 
 ```ts
-interface GpuFuzzSpec {
+interface FuzzSpec {
   instances: number; // Number of test instances (must be positive integer)
   input: (i: number) => number; // CPU input value generator
   test: (x: Node) => Node; // TSL expression under test
@@ -41,7 +41,7 @@ await gpuFuzzTest("sin", {
 
 When to use `absolute: true`:
 
-For periodic functions like `sin` and `cos`, f32 (GPU) and f64 (CPU) precision differences can cause relative tolerance to fail near zero crossings. For example, `sin(f32(π))` returns `0.0` on GPU but `Math.sin(f32(π))` returns `-8.74e-8` due to double precision computation. Using absolute tolerance avoids this issue.
+For periodic functions like `sin` and `cos`, f32 (GPU) and f64 (CPU) precision differences can cause relative tolerance to fail near zero crossings. For example, `sin(f32(π))` typically returns a value very close to 0 on GPU but `Math.sin(f32(π))` returns `-8.74e-8` due to double precision computation. Using absolute tolerance avoids this issue.
 
 ### Identity Function
 
@@ -88,7 +88,7 @@ await gpuFuzzTest("cos", {
   input: (i) => (i / 64) * Math.PI * 2,
   test: (x) => cos(x),
   expected: (x) => Math.cos(x),
-  tolerance: 1e-4,
+  tolerance: 1e-3,
   absolute: true,
 });
 ```
