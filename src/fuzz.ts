@@ -1,10 +1,11 @@
 import type { Node } from "three/webgpu";
 import { StorageInstancedBufferAttribute } from "three/webgpu";
 import { Fn, instanceIndex, storage, float } from "three/tsl";
-import { getRenderer, isBackendAvailable, type BackendName } from "./context.ts";
+import { getRenderer, resolveAvailableBackends, type BackendName } from "./context.ts";
 import { getDefaultBackends } from "./config.ts";
 import { readStorage } from "./readback.ts";
 import { DEFAULT_TOLERANCE, toVec4 } from "./assert.ts";
+import { formatFloat } from "./assert/format.ts";
 import { closeRelCompare, closeAbsCompare } from "./assert/compare.ts";
 
 /**
@@ -39,10 +40,6 @@ export interface FuzzSpec {
    * or ['webgpu', 'webgl']. Unavailable backends are soft-skipped.
    */
   backends?: BackendName[];
-}
-
-function formatFloat(n: number): string {
-  return Number.isInteger(n) ? `${n}.0` : String(n);
 }
 
 /** Pad a CPU-side reference value exactly like TSL's node.toVec4() would. */
@@ -164,21 +161,7 @@ async function runFuzzBackend(name: string, spec: FuzzSpec, backend: BackendName
  */
 export async function gpuFuzzTest(name: string, spec: FuzzSpec): Promise<void> {
   const requested = spec.backends ?? getDefaultBackends();
-  const available: BackendName[] = [];
-  for (const backend of requested) {
-    if (await isBackendAvailable(backend)) {
-      available.push(backend);
-    } else {
-      console.warn(
-        `[vitest-browser-three] gpuFuzzTest "${name}": skipping unavailable "${backend}" backend.`,
-      );
-    }
-  }
-  if (available.length === 0) {
-    throw new Error(
-      `[vitest-browser-three] gpuFuzzTest "${name}": no requested GPU backends are available (requested: ${requested.join(", ")}).`,
-    );
-  }
+  const available = await resolveAvailableBackends(requested, `gpuFuzzTest "${name}"`);
 
   for (const backend of available) {
     try {

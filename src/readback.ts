@@ -1,5 +1,6 @@
 import type { WebGPURenderer } from "three/webgpu";
-import type { StorageInstancedBufferAttribute, BufferAttribute } from "three/webgpu";
+import type { StorageInstancedBufferAttribute } from "three/webgpu";
+import type { BufferAttribute } from "three";
 import type { BackendLike } from "./three-internals.ts";
 
 type TypedArray =
@@ -23,14 +24,7 @@ export async function readStorage(
   renderer: WebGPURenderer,
   attribute: StorageInstancedBufferAttribute,
 ): Promise<Float32Array> {
-  const backend = renderer.backend as unknown as BackendLike;
-  if (typeof backend.getArrayBufferAsync !== "function") {
-    throw new Error(
-      "[vitest-browser-three] Current three.js backend does not provide getArrayBufferAsync(). Please upgrade three.js.",
-    );
-  }
-  const buffer: ArrayBuffer = await backend.getArrayBufferAsync(attribute);
-  return new Float32Array(buffer.slice(0));
+  return readBufferAs(renderer, attribute, Float32Array);
 }
 
 /**

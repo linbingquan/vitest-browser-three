@@ -4,6 +4,7 @@
  */
 
 import { ZERO_FLOOR } from "./constants.ts";
+import { formatFloat } from "./format.ts";
 
 export type AssertionKind =
   | "eq"
@@ -87,10 +88,6 @@ export function compareComponents(
     }
     return { index: i, actual: a, expected: e, ok };
   });
-}
-
-function formatFloat(n: number): string {
-  return Number.isInteger(n) ? `${n}.0` : String(n);
 }
 
 export function describeFailure(

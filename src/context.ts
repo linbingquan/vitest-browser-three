@@ -55,6 +55,35 @@ export async function isBackendAvailable(backend: BackendName): Promise<boolean>
   }
 }
 
+/**
+ * Filter a requested backend list down to those available in the current
+ * environment, soft-skipping unavailable backends with a warning. Throws if
+ * none are available.
+ *
+ * @param requested - Backends requested by the test (typically from options or defaults)
+ * @param context - Human-readable context for error messages, e.g. `gpuTest "my test"`
+ * @returns The list of available backends (non-empty)
+ */
+export async function resolveAvailableBackends(
+  requested: BackendName[],
+  context: string,
+): Promise<BackendName[]> {
+  const available: BackendName[] = [];
+  for (const backend of requested) {
+    if (await isBackendAvailable(backend)) {
+      available.push(backend);
+    } else {
+      console.warn(`[vitest-browser-three] ${context}: skipping unavailable "${backend}" backend.`);
+    }
+  }
+  if (available.length === 0) {
+    throw new Error(
+      `[vitest-browser-three] ${context}: no requested GPU backends are available (requested: ${requested.join(", ")}).`,
+    );
+  }
+  return available;
+}
+
 export async function disposeRenderer(backend?: BackendName): Promise<void> {
   if (backend) {
     const entry = renderers[backend];
@@ -71,12 +100,4 @@ export async function disposeRenderer(backend?: BackendName): Promise<void> {
   } else {
     await Promise.all([disposeRenderer("webgpu"), disposeRenderer("webgl")]);
   }
-}
-
-/** @internal test-only: inject a specific renderer instance for a backend. */
-export function __setRendererForTest(
-  renderer: WebGPURenderer,
-  backend: BackendName = "webgpu",
-): void {
-  renderers[backend] = { promise: Promise.resolve(renderer) };
 }

@@ -6,15 +6,15 @@
 import { Node, StorageInstancedBufferAttribute } from "three/webgpu";
 import type { TypedArray } from "three/webgpu";
 import { Fn, If, Stack, instanceIndex, storage, vec4 } from "three/tsl";
-import { getRenderer, type BackendName } from "../context.ts";
+import { getRenderer, type BackendName, resolveAvailableBackends } from "../context.ts";
 import { readStorage } from "../readback.ts";
 import { CANARY_VALUE, MAX_COLUMNS } from "./constants.ts";
 import { getDefaultBackends } from "../config.ts";
-import { isBackendAvailable } from "../context.ts";
 import type { AssertionKind } from "./compare.ts";
 import { compareComponents, describeFailure } from "./compare.ts";
 import { cpuToNode, isNode } from "./convert.ts";
 import { AssertionNode } from "./assertion-node.ts";
+import { formatFloat } from "./format.ts";
 
 /** Anything an assertion can compare against: a TSL node or a CPU-side constant. */
 export type ExpectedValue = Node | number | number[] | TypedArray;
@@ -50,10 +50,6 @@ export interface GPURunOptions {
    * warning; if none are available the test fails.
    */
   backends?: BackendName[];
-}
-
-function formatFloat(n: number): string {
-  return Number.isInteger(n) ? `${n}.0` : String(n);
 }
 
 /** Implementation of gpuTest for a single backend; see gpuTest for contract. */
@@ -231,21 +227,7 @@ export async function gpuTest(
   }
 
   const requested = options.backends ?? getDefaultBackends();
-  const available: BackendName[] = [];
-  for (const backend of requested) {
-    if (await isBackendAvailable(backend)) {
-      available.push(backend);
-    } else {
-      console.warn(
-        `[vitest-browser-three] gpuTest "${name}": skipping unavailable "${backend}" backend.`,
-      );
-    }
-  }
-  if (available.length === 0) {
-    throw new Error(
-      `[vitest-browser-three] gpuTest "${name}": no requested GPU backends are available (requested: ${requested.join(", ")}).`,
-    );
-  }
+  const available = await resolveAvailableBackends(requested, `gpuTest "${name}"`);
 
   for (const backend of available) {
     try {
