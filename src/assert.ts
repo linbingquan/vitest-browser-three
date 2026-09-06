@@ -54,6 +54,24 @@ type AssertionKind =
 
 export const DEFAULT_TOLERANCE = 1e-6;
 
+/**
+ * Standard relative tolerance comparison.
+ * Returns true iff `|actual - expected| <= tolerance * max(|actual|, |expected|, 1e-12)`.
+ *
+ * The `1e-12` floor prevents the comparison from collapsing to exact equality
+ * (or division by zero) when both values are near zero; using `max(|a|, |e|)`
+ * (rather than `|e|` alone) keeps the tolerance symmetric so that a tiny
+ * `expected` does not make the test trivially easy to satisfy.
+ *
+ * Shared by `compareComponents` (gpuTest path) and `runFuzzBackend`
+ * (gpuFuzzTest path) so both APIs use identical semantics.
+ */
+export function closeRelCompare(actual: number, expected: number, tolerance: number): boolean {
+  return (
+    Math.abs(actual - expected) <= tolerance * Math.max(Math.abs(actual), Math.abs(expected), 1e-12)
+  );
+}
+
 // Written unconditionally into a reserved row of the actual buffer. If the
 // kernel fails to build (e.g. a NaN literal reaching generated WGSL),
 // computeAsync may not reject at all — it just reports asynchronously — and
@@ -187,7 +205,7 @@ function compareComponents(
         ok = Math.abs(a - e) <= tolerance;
         break;
       case "closeRel":
-        ok = Math.abs(a - e) <= tolerance * Math.max(Math.abs(a), Math.abs(e), 1e-12);
+        ok = closeRelCompare(a, e, tolerance);
         break;
       case "greaterThan":
         ok = a > e;

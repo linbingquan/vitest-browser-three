@@ -4,7 +4,7 @@ import { Fn, instanceIndex, storage, float } from "three/tsl";
 import { getRenderer, isBackendAvailable, type BackendName } from "./context.ts";
 import { getDefaultBackends } from "./config.ts";
 import { readStorage } from "./readback.ts";
-import { DEFAULT_TOLERANCE, toVec4 } from "./assert.ts";
+import { DEFAULT_TOLERANCE, toVec4, closeRelCompare } from "./assert.ts";
 
 /**
  * Deterministic fuzz-test spec: every instance gets one scalar input derived
@@ -104,7 +104,7 @@ async function runFuzzBackend(name: string, spec: FuzzSpec, backend: BackendName
     for (let c = 0; c < 4; c++) {
       const a = actualData[i * 4 + c];
       const e = expectedData[i * 4 + c];
-      if (Math.abs(a - e) > tolerance * Math.max(Math.abs(a), Math.abs(e), 1e-12)) {
+      if (!closeRelCompare(a, e, tolerance)) {
         failures.push(
           `instance ${i} (input ${formatFloat(inputValues[i])}), component ${c}: ` +
             `${formatFloat(a)} !== ${formatFloat(e)} (tolerance ${tolerance})`,
