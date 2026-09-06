@@ -70,6 +70,8 @@ await gpuTest("subgroup", ({ eq }) => eq(...), {
 The library uses a canary value to detect silent failures (e.g., shader compilation errors):
 
 ```ts
+import { it, expect } from "vitest";
+
 it("detects silent failures", async () => {
   await expect(
     gpuTest("nan-literal", ({ closeRel }) => {
