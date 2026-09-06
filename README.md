@@ -15,11 +15,11 @@ expected values instead of a bare test id.
 ## Install
 
 ```bash
-pnpm add three @types/three
-pnpm add -D @vitest/browser @vitest/browser-playwright playwright vitest
+npm install three @types/three
+npm install -D @vitest/browser @vitest/browser-playwright playwright vitest
 ```
 
-> If you use Vite+, you can also use `vp add` instead of `pnpm add`.
+> You can also use pnpm, yarn or other package managers.
 
 ## Quick Start
 
