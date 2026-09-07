@@ -43,7 +43,7 @@ export function padToVec4(value: Node, count: number): Node {
   for (let i = 0; i < 4; i++) {
     if (i < count) {
       if (count === 1) {
-        components.push(float(value as never));
+        components.push(value);
       } else {
         components.push(sw[SWIZZLE[i] as keyof NodeWithSwizzles]);
       }

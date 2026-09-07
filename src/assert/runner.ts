@@ -98,15 +98,15 @@ export async function runBackend(
           message,
         }),
       );
-      Stack(nodes[nodes.length - 1] as never);
+      Stack(nodes[nodes.length - 1]);
     };
 
   const assertAPI: GPUAssert = {
     eq: (a, e, msg) => makeAssertion("eq", 0, msg)(a, e),
     closeAbs: (a, e, tol = DEFAULT_TOLERANCE, msg) =>
-      makeAssertion("closeAbs", tol, msg)(a, isNode(e) ? e : cpuToNode(e as never)),
+      makeAssertion("closeAbs", tol, msg)(a, isNode(e) ? e : cpuToNode(e)),
     closeRel: (a, e, tol = DEFAULT_TOLERANCE, msg) =>
-      makeAssertion("closeRel", tol, msg)(a, isNode(e) ? e : cpuToNode(e as never)),
+      makeAssertion("closeRel", tol, msg)(a, isNode(e) ? e : cpuToNode(e)),
     greaterThan: (a, e, msg) => makeAssertion("greaterThan", 0, msg)(a, e),
     greaterThanOrEqual: (a, e, msg) => makeAssertion("greaterThanOrEqual", 0, msg)(a, e),
     lessThan: (a, e, msg) => makeAssertion("lessThan", 0, msg)(a, e),
