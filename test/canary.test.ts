@@ -17,7 +17,7 @@ describe("canary mechanism", () => {
       gpuTest("nan-literal", ({ closeRel }) => {
         closeRel(float(Number.NaN).add(1), float(1));
       }),
-    ).rejects.toThrow(/compute kernel never ran.*canary value missing/s);
+    ).rejects.toThrow(/compute kernel never ran.*canary mismatch/s);
   });
 
   // NOTE: Division by zero may produce Inf/NaN but GPU compilers often optimize

@@ -8,7 +8,7 @@ import type { TypedArray } from "three/webgpu";
 import { Fn, If, Stack, instanceIndex, storage, vec4 } from "three/tsl";
 import { getRenderer, type BackendName, resolveAvailableBackends } from "../context.ts";
 import { readStorage } from "../readback.ts";
-import { CANARY_VALUE, MAX_COLUMNS } from "./constants.ts";
+import { randomCanaryValue, MAX_COLUMNS } from "./constants.ts";
 import { getDefaultBackends } from "../config.ts";
 import type { AssertionKind } from "./compare.ts";
 import { compareComponents, describeFailure } from "./compare.ts";
@@ -70,6 +70,11 @@ export async function runBackend(
 
   const renderer = await getRenderer(backend);
 
+  // Generated once per test × backend invocation, outside the Fn() callback
+  // (which may rebuild more than once) so every rebuild embeds the same
+  // literal. See randomCanaryValue() for why this cannot be a shared constant.
+  const canaryValue = randomCanaryValue();
+
   // One entry per built AssertionNode. The Fn callback may be invoked several
   // times across TSL's build stages; nodes MUST be reset at the start of each
   // invocation — rebuilding is idempotent, so the last pass's bookkeeping
@@ -117,7 +122,7 @@ export async function runBackend(
     nodes.length = 0;
 
     If(instanceIndex.equal(canaryRow), () => {
-      actualStorage.element(instanceIndex).assign(vec4(CANARY_VALUE, 0, 0, 0));
+      actualStorage.element(instanceIndex).assign(vec4(canaryValue, 0, 0, 0));
     });
 
     fn(assertAPI);
@@ -130,9 +135,9 @@ export async function runBackend(
   const actualData = await readStorage(renderer, actualAttr);
 
   const canaryActual = actualData[canaryRow * 4];
-  if (Math.abs(canaryActual - CANARY_VALUE) > 1e-3) {
+  if (canaryActual !== canaryValue) {
     throw new Error(
-      `gpuTest "${name}": the compute kernel never ran (canary value missing — got ${formatFloat(canaryActual)}, expected ${formatFloat(CANARY_VALUE)}). ` +
+      `gpuTest "${name}": the compute kernel never ran (canary mismatch — got ${formatFloat(canaryActual)}, expected ${formatFloat(canaryValue)}). ` +
         `This usually means the shader failed to build (invalid WGSL, e.g. a NaN or otherwise malformed literal reaching generated shader source) ` +
         `and the failure was only reported asynchronously — check the browser console for the underlying GPU compile error. ` +
         `Without the canary, every assertion would have silently compared a never-written 0 against a never-written 0 and passed.`,

@@ -3,13 +3,17 @@
  * Constants shared across the assertion system.
  */
 
-// Written unconditionally into a reserved row of the actual buffer. If the
-// kernel fails to build (e.g. a NaN literal reaching generated WGSL),
-// computeAsync may not reject at all — it just reports asynchronously — and
-// every buffer reads back zero-initialized, so all assertions would silently
-// compare 0 against 0 and pass. The canary's absence proves the dispatch
-// never ran and lets us fail loudly instead.
-export const CANARY_VALUE = 12345.6789;
+/**
+ * Generate a fresh canary value for a single test × backend invocation.
+ *
+ * Using a random integer avoids the stale-kernel false-positive on the
+ * WebGL2 fallback: after a link failure the previously bound program may
+ * still run and satisfy a fixed canary. Integers in this range round-trip
+ * through float32 exactly, so the readback check can use strict equality.
+ */
+export function randomCanaryValue(): number {
+  return 1000 + Math.floor(Math.random() * 9000);
+}
 
 export const MAX_COLUMNS = 4;
 

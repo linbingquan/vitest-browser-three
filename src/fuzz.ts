@@ -1,6 +1,7 @@
 import type { Node } from "three/webgpu";
 import { StorageInstancedBufferAttribute } from "three/webgpu";
-import { Fn, instanceIndex, storage, float } from "three/tsl";
+import { Fn, If, instanceIndex, storage, float, vec4 } from "three/tsl";
+import { randomCanaryValue } from "./assert/constants.ts";
 import { getRenderer, resolveAvailableBackends, type BackendName } from "./context.ts";
 import { getDefaultBackends } from "./config.ts";
 import { readStorage } from "./readback.ts";
@@ -81,13 +82,19 @@ async function runFuzzBackend(name: string, spec: FuzzSpec, backend: BackendName
     expectedValues.set([a, b, c, d], i * 4);
   }
 
+  const canaryValue = randomCanaryValue();
+  const totalRows = instances + 1;
+  const canaryRow = instances;
+
   const inputAttr = new StorageInstancedBufferAttribute(
-    Float32Array.from({ length: instances * 4 }, (_, k) => inputValues[k >> 2]),
+    Float32Array.from({ length: totalRows * 4 }, (_, k) =>
+      k < instances * 4 ? inputValues[k >> 2] : 0,
+    ),
     4,
   );
-  const inputStorage = storage(inputAttr, "vec4", instances);
-  const actualAttr = new StorageInstancedBufferAttribute(new Float32Array(instances * 4), 4);
-  const actualStorage = storage(actualAttr, "vec4", instances);
+  const inputStorage = storage(inputAttr, "vec4", totalRows);
+  const actualAttr = new StorageInstancedBufferAttribute(new Float32Array(totalRows * 4), 4);
+  const actualStorage = storage(actualAttr, "vec4", totalRows);
   // NOTE: do not wrap expectedValues in a storage() node — creating a storage
   // node that is never used inside a kernel breaks backend buffer registration
   // for the attributes that ARE used (observed on three r0.185). Expected
@@ -96,16 +103,36 @@ async function runFuzzBackend(name: string, spec: FuzzSpec, backend: BackendName
   const renderer = await getRenderer(backend);
 
   // Bare instanceIndex addressing: the only pattern transform-feedback
-  // backends (WebGL2 fallback) support reliably.
+  // backends (WebGL2 fallback) support reliably. Last row reserved
+  // for canary (see randomCanaryValue() for stale-kernel vulnerability).
   await renderer.computeAsync(
     Fn(() => {
-      actualStorage
-        .element(instanceIndex)
-        .assign(toVec4(test(float(inputStorage.element(instanceIndex).x))));
-    })().compute(instances),
+      If(instanceIndex.equal(canaryRow), () => {
+        actualStorage.element(instanceIndex).assign(vec4(canaryValue, 0, 0, 0));
+      });
+
+      If(instanceIndex.lessThan(instances), () => {
+        actualStorage
+          .element(instanceIndex)
+          .assign(toVec4(test(float(inputStorage.element(instanceIndex).x))));
+      });
+    })().compute(totalRows),
   );
 
   const actualData = await readStorage(renderer, actualAttr);
+
+  // Canary check: if the kernel failed to build, the canary will be
+  // missing (read back as 0), preventing silent false positives from
+  // stale-kernel execution on WebGL2 fallback.
+  const canaryActual = actualData[canaryRow * 4];
+  if (canaryActual !== canaryValue) {
+    throw new Error(
+      `gpuFuzzTest "${name}": the compute kernel never ran (canary mismatch — got ${formatFloat(canaryActual)}, expected ${formatFloat(canaryValue)}). ` +
+        `This usually means the shader failed to build (invalid WGSL) ` +
+        `and the failure was only reported asynchronously — check the browser console.`,
+    );
+  }
+
   // Compare directly against the CPU-side reference array — no GPU roundtrip.
   const expectedData = expectedValues;
 
