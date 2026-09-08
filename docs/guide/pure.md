@@ -18,6 +18,10 @@ The `vitest-browser-three/pure` entry point provides the core GPU test primitive
 The `pure` entry gives you the same building blocks, but without the
 automatic `afterAll` cleanup — you control when renderers are disposed.
 
+> **Note**: The `pure` entry does not register automatic `afterAll` cleanup
+> hooks, but functions like `configureGPU` still mutate library-wide state
+> when called. Use them intentionally, typically inside setup hooks.
+
 ## Import
 
 ```ts
