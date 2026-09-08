@@ -4,15 +4,7 @@
 
 ### Floating-Point Comparisons
 
-Use `closeRel` for most floating-point comparisons:
-
-```ts
-// Good: relative tolerance handles various scales
-closeRel(sin(float(x)), float(Math.sin(x)), 1e-5);
-
-// Avoid: absolute tolerance can fail at small values
-closeAbs(sin(float(x)), float(Math.sin(x)), 1e-5);
-```
+Use `closeRel` for most floating-point comparisons.
 
 ### SwiftShader Considerations
 
@@ -44,6 +36,16 @@ Tolerance must account for:
 3. **Platform variance**: Hardware GPUs may differ slightly from CPU reference
 
 Start with 1e-3 for trig functions, or 1e-4 for simple arithmetic. If tests are flaky, relax the tolerance; if they pass consistently, you can try tightening it.
+
+### Sampling Near Discontinuities
+
+For functions with discontinuities (`fract`, `step`), use half-step sampling so inputs never land exactly on the boundary where f32 and f64 evaluations may disagree:
+
+```ts
+input: (i) => (i + 0.5) / instances; // instead of (i / n), instances = total test instances
+```
+
+This is especially important when the CPU reference computes in f64 while the GPU uses f32. See `docs/DECISIONS.md` for details.
 
 ### Integer Comparisons
 

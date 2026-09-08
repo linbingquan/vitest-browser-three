@@ -40,14 +40,17 @@ configureGPU({ backends: ["webgpu"] });
 ## Environment Probing
 
 ```ts
+import { it } from "vitest";
 import { isBackendAvailable } from "vitest-browser-three";
 
-const webgpu = await isBackendAvailable("webgpu");
-const webgl = await isBackendAvailable("webgl");
+it("probes available backends", async () => {
+  const webgpu = await isBackendAvailable("webgpu");
+  const webgl = await isBackendAvailable("webgl");
 
-if (!webgpu && !webgl) {
-  console.warn("No GPU backend available");
-}
+  if (!webgpu && !webgl) {
+    console.warn("No GPU backend available");
+  }
+});
 ```
 
 ## Soft Skip Behavior

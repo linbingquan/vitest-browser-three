@@ -50,7 +50,7 @@ import { float, sin, vec3 } from "three/tsl";
 it("vector math", async () => {
   await gpuTest("vector math", ({ eq, closeRel }) => {
     eq(float(2).add(3), float(5));
-    closeRel(sin(float(Math.PI / 2)), float(1), 1e-3);
+    closeRel(sin(float(Math.PI / 2)), 1, 1e-3);
     closeRel(vec3(1, 2, 3).mul(2), vec3(2, 4, 6));
   });
 });
@@ -73,4 +73,3 @@ GPU_RENDER=hw npx vitest
 
 - [Configuration](./configuration.md) - Backend selection and options
 - [API Reference](./api/gpu-test.md) - All available assertion methods
-- [Examples](./examples/) - More test examples

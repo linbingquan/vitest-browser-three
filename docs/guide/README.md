@@ -12,7 +12,6 @@ GPU-native assertions for three.js TSL expressions in Vitest Browser Mode.
   - [`rawComputeTest`](./api/raw-compute.md) - Low-level GPU compute control
   - [Buffer Readback](./api/readback.md) - readUintBuffer, readIntBuffer
 - [Pure API](./pure.md) - Core primitives without side effects
-- [Examples](./examples/)
 - [Best Practices](./best-practices.md) - Tolerance selection, backend fallback
 - [Troubleshooting](./troubleshooting.md) - Common issues and solutions
 

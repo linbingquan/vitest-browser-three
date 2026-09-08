@@ -18,7 +18,7 @@ interface FuzzSpec {
   expected: (x: number, instance: number) => number | number[]; // CPU reference value
   tolerance?: number; // Tolerance (default: 1e-6)
   absolute?: boolean; // Use absolute tolerance instead of relative (default: false)
-  backends?: BackendName[]; // Backend(s) to test against (default: ['webgpu', 'webgl'])
+  backends?: BackendName[]; // Backends to run this suite against. Defaults to configureGPU's setting, or ['webgpu', 'webgl']. Unavailable backends are soft-skipped.
 }
 ```
 
@@ -42,6 +42,16 @@ it("sin", async () => {
   });
 });
 ```
+
+### Sampling Near Discontinuities
+
+When fuzzing functions with discontinuities (e.g., `fract`, `step`), use half-step sampling to avoid landing exactly on a discontinuity, where f32/f64 precision differences can cause spurious failures:
+
+```ts
+input: (i) => ((i + 0.5) / 128) * Math.PI * 2; // half-step
+```
+
+For continuous functions like `sin` and `cos`, both `(i / n)` and `((i + 0.5) / n)` work; half-step is a defensive habit recommended by the project's design decisions.
 
 When to use `absolute: true`:
 
