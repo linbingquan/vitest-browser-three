@@ -41,9 +41,10 @@ export async function readBufferAs<T extends TypedArray>(
   const backend = renderer.backend as unknown as BackendLike;
   if (typeof backend.getArrayBufferAsync !== "function") {
     throw new Error(
-      "[vitest-browser-three] Current three.js backend does not provide getArrayBufferAsync(). Please upgrade three.js.",
+      "[vitest-browser-three] Current three.js backend does not provide getArrayBufferAsync(), which is required for buffer readback.",
     );
   }
   const arrayBuffer = await backend.getArrayBufferAsync(buffer as StorageInstancedBufferAttribute);
+  // Copy the buffer so the returned TypedArray is independent of any future GPU writes.
   return new TypedArrayConstructor(arrayBuffer.slice(0));
 }

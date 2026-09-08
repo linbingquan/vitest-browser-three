@@ -60,6 +60,11 @@ export function compareComponents(
   kind: AssertionKind,
   tolerance: number,
 ): ComparisonResult[] {
+  if (actual.length !== expected.length) {
+    throw new Error(
+      `[vitest-browser-three] compareComponents: actual length ${actual.length} != expected length ${expected.length}`,
+    );
+  }
   return actual.map((a, i) => {
     const e = expected[i];
     let ok: boolean;

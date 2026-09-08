@@ -10,12 +10,12 @@ gpuTest(name: string, fn: (ctx: GPUAssert) => void, options?: GPURunOptions): Pr
 
 ## Parameters
 
-| Parameter               | Type            | Description                                                                                                                                                                                                                                                                          |
-| ----------------------- | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `name`                  | `string`        | Test name                                                                                                                                                                                                                                                                            |
-| `fn`                    | `(ctx) => void` | Callback receiving assertion context                                                                                                                                                                                                                                                 |
-| `options.backends`      | `BackendName[]` | Backend(s) to test against                                                                                                                                                                                                                                                           |
-| `options.maxAssertions` | `number`        | Upper bound on assertion calls per test (default: 64). The library reserves the last row of the last column for the canary value, so the maximum number of assertion calls is `maxAssertions - 1`. Each assertion uses 4 rows. Set `maxAssertions = N + 1` if you need N assertions. |
+| Parameter               | Type            | Description                                                                                                                                                                                                                                                                     |
+| ----------------------- | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `name`                  | `string`        | Test name                                                                                                                                                                                                                                                                       |
+| `fn`                    | `(ctx) => void` | Callback receiving assertion context                                                                                                                                                                                                                                            |
+| `options.backends`      | `BackendName[]` | Backend(s) to test against                                                                                                                                                                                                                                                      |
+| `options.maxAssertions` | `number`        | Upper bound on assertion calls per test (default: 64). The library reserves one row (a vec4) for the canary value, so the maximum number of actual assertions is `maxAssertions - 1`. Each assertion uses 4 rows. Set `maxAssertions = N + 1` if you need exactly N assertions. |
 
 ## Assertion Context
 
@@ -157,7 +157,7 @@ it("with message", async () => {
     closeRel(float(1), float(2), 1e-6, "custom context");
   });
 });
-// Error: "custom context - expected 2, got 1"
+// Error: custom context, component 0: expected 2.0, got 1.0 (tolerance 1e-6)
 ```
 
 ## Error Handling
@@ -170,7 +170,7 @@ import { gpuTest } from "vitest-browser-three";
 import { float, vec3 } from "three/tsl";
 
 it("type error", async () => {
-  // Throws: type mismatch between "float" and "vec3"
+  // Throws: type mismatch — comparing "float" against "vec3"
   await gpuTest("type error", ({ eq }) => {
     eq(float(1), vec3(1, 2, 3));
   });

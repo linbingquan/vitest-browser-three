@@ -195,8 +195,11 @@ export async function gpuFuzzTest(name: string, spec: FuzzSpec): Promise<void> {
       await runFuzzBackend(name, spec, backend);
     } catch (error) {
       const suffix = `[backend: ${backend}]`;
-      if (error instanceof Error && !error.message.includes(suffix)) {
-        error.message = `${error.message}\n(failed on ${suffix})`;
+      const message = error instanceof Error ? error.message : String(error);
+      if (!message.includes(suffix)) {
+        const wrapped = new Error(`${message}\n(failed on ${suffix})`);
+        wrapped.cause = error;
+        throw wrapped;
       }
       throw error;
     }

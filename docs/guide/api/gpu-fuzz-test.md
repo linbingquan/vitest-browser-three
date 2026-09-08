@@ -156,7 +156,7 @@ import { it } from "vitest";
 import { gpuFuzzTest } from "vitest-browser-three";
 
 it("mismatch", async () => {
-  // Throws: expected array must match test output components
+  // Throws: [vitest-browser-three] gpuFuzzTest expected must return 1-4 components, got 5
   await gpuFuzzTest("mismatch", {
     instances: 2,
     input: (i) => i,
@@ -181,5 +181,6 @@ it("failing", async () => {
     expected: (x, i) => (i === 5 ? 999 : x * 10), // instance 5 is wrong
   });
 });
-// Error: "instance 5 (input 5.0) failed"
+// Error: gpuFuzzTest "failing" failed (1/8 instances):
+//   - instance 5 (input 5.0), component 0: 50.0 !== 999.0 (tolerance 1e-6)
 ```
