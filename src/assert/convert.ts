@@ -37,16 +37,25 @@ export function isNode(value: unknown): value is Node {
  * and ensures consistent comparison between gpuTest and gpuFuzzTest paths.
  */
 export function padToVec4(value: Node, count: number): Node {
+  if (count < 1 || count > 4) {
+    throw new Error(`[vitest-browser-three] padToVec4: count must be 1-4, got ${count}`);
+  }
+  if (count === 1) {
+    // Scalar broadcasts all four components (matches node.toVec4() semantics).
+    return vec4(
+      value as Node<"float">,
+      value as Node<"float">,
+      value as Node<"float">,
+      value as Node<"float">,
+    );
+  }
   if (count === 4) return value;
+
   const sw = value as unknown as NodeWithSwizzles;
   const components: Node[] = [];
   for (let i = 0; i < 4; i++) {
     if (i < count) {
-      if (count === 1) {
-        components.push(value);
-      } else {
-        components.push(sw[SWIZZLE[i] as keyof NodeWithSwizzles]);
-      }
+      components.push(sw[SWIZZLE[i] as keyof NodeWithSwizzles]);
     } else if (count === 2) {
       // vec2 padding: z=0, w=1 (matches three.js toVec4 semantics)
       components.push(i === 2 ? float(0) : float(1));

@@ -20,6 +20,12 @@ import {
 import { rawComputeTest, readUintBuffer, readIntBuffer } from "../src/index.ts";
 import type { WebGPURenderer } from "three/webgpu";
 
+// TSL compute(totalInvocations, [workgroupSize]) semantics:
+//   - 1st param = total thread count (instanceIndex ranges 0..totalInvocations-1)
+//   - 2nd param = threads per workgroup (optional, defaults to [1])
+//   - .compute(64, [8]) = 64 total threads, split into 8 workgroups of 8
+//   - .compute(64)      = 64 total threads, 1 thread per workgroup
+// Reference: three.js GPUAtomicsStorage.tests.js
 const WORKGROUP_SIZE = 8;
 
 function makeUintCounter() {

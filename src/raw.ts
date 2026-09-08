@@ -49,6 +49,12 @@ export interface RawComputeTestContext {
  * If the backend is unavailable or the required feature is not supported,
  * the test is soft-skipped with a warning (test passes, not fails).
  *
+ * **TSL compute dispatch note**: Use `kernel.compute(totalInvocations, [workgroupSize])`
+ * inside the callback. The first argument is the **total number of invocations**
+ * (not workgroup count). `instanceIndex` ranges from `0` to `totalInvocations - 1`.
+ * The optional second argument groups threads into workgroups; omit it or use `[1]`
+ * for single-thread-per-workgroup dispatch.
+ *
  * @param name - Test name used in skip/failure messages.
  * @param options - Backend and required feature. See {@link RawComputeTestOptions}.
  * @param fn - Callback receiving the ready renderer; may be async.
@@ -94,8 +100,9 @@ export async function rawComputeTest(
     // hasFeature may not exist on WebGL fallback renderer
     if (typeof renderer.hasFeature !== "function") {
       console.warn(
-        `[vitest-browser-three] rawComputeTest "${name}": requiredFeature "${requiredFeature}" check skipped — current backend does not support feature detection.`,
+        `[vitest-browser-three] rawComputeTest "${name}": skipping — "${backend}" backend does not support feature detection for "${requiredFeature}".`,
       );
+      return;
     } else if (!renderer.hasFeature(requiredFeature)) {
       console.warn(
         `[vitest-browser-three] rawComputeTest "${name}": skipping — "${backend}" backend does not support required feature "${requiredFeature}".`,
