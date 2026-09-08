@@ -8,22 +8,28 @@
 
 ## 上游对齐
 
-参照上游：three.js PR
-[#34331](https://github.com/mrdoob/three.js/pull/34331)
-的原型 `gpu-test-utils.js`（基于 QUnit）。
+参照上游：three.js 原型 GPU 测试工具（基于 QUnit），当前文件：
 
-| 维度             | three.js PR #34331                         | 本库选择                      | 理由                                        |
-| ---------------- | ------------------------------------------ | ----------------------------- | ------------------------------------------- |
-| gpuFuzzTest 形态 | `(name, count, buildFn, options)` 位置参数 | `(name, spec)` 对象           | 自文档化；CPU 参考值是本库核心目的          |
-| fuzz 输入生成    | GPU 端 `hash(instanceIndex)`               | CPU 确定性函数 → storage 缓冲 | 支持任意分布；与 CPU expected 函数模型匹配  |
-| 每实例多断言     | site 预算制（`maxSitesPerInstance`）       | 单一 `test` 表达式            | 规避 WebGL2 transform-feedback 缓冲预算问题 |
-| message 参数     | 有                                         | 有                            | 已实现并有测试与文档覆盖                    |
+- [`gpu-test-utils.js`](https://github.com/mrdoob/three.js/blob/dev/test/unit/addons/tsl/gpu-test-utils.js) — `gpuTest` / `gpuFuzzTest`
+- [`gpu-raw-test-utils.js`](https://github.com/mrdoob/three.js/blob/dev/test/unit/addons/tsl/gpu-raw-test-utils.js) — `rawComputeTest`
+
+| 维度                  | 上游                                                                       | 本库选择                                              | 理由                                                        |
+| --------------------- | -------------------------------------------------------------------------- | ----------------------------------------------------- | ----------------------------------------------------------- |
+| gpuFuzzTest 形态      | `(name, count, buildFn, options)` 位置参数                                 | `(name, spec)` 对象                                   | 自文档化；CPU 参考值是本库核心目的                          |
+| fuzz 输入生成         | GPU 端基于 `instanceIndex`（buildFn 直接接收实例索引，由用户自行派生输入） | CPU 确定性函数 → storage 缓冲                         | 支持任意分布；与 CPU expected 函数模型匹配                  |
+| 每实例多断言          | site 预算制（`maxSitesPerInstance`）                                       | 单一 `test` 表达式                                    | 规避 WebGL2 transform-feedback 缓冲预算问题                 |
+| message 参数          | 有                                                                         | 有                                                    | 已实现并有测试与文档覆盖                                    |
+| 后端配置              | 仅单次调用 `backends` 选项                                                 | `configureGPU({ backends })` 设置库级默认 + 单次选项  | 更便于后端策略固定的测试套件                                |
+| 渲染器生命周期        | 共享缓存，无自动清理                                                       | 共享缓存 + 主入口自动清理（`afterAll`）               | 减少样板代码；pure 入口保留手动控制选项                     |
+| Canary 值生成         | 每次 test × backend 随机生成（`randomCanaryValue()`）                      | 每次 test × backend 随机生成（`randomCanaryValue()`） | 已采用上游策略，防止 WebGL2 fallback 上的 stale-kernel 误报 |
+| gpuFuzzTest 矩阵支持  | 通过 `maxColumnsPerSite` 可选支持（默认 1；3/4 用于 mat3/mat4）            | 不支持（仅 1–4 分量，通过 `padExpected`）             | 规避 WebGL2 缓冲预算；保持 API 简洁                         |
+| rawComputeTest 上下文 | `{ assert, renderer }`（包含 QUnit 断言对象）                              | `{ renderer }`（调用者自行使用 Vitest 断言）          | 框架无关；调用者完全控制断言风格                            |
 
 **总体策略**：自主维护实现、吸收上游设计思想（canary 检测、裸
 instanceIndex 寻址、AssertWriteNode 式类型解析），不依赖深度耦合 QUnit
-的原型代码。持续监控 `test/unit/addons/tsl/gpu-test-utils.js` 的提交，待
-上游毕业成正式 API 后再评估切换或提供兼容层。（实测：原型提交
-`5132c1fa` 后至今零演进。）
+的原型代码。持续监控 `test/unit/addons/tsl/gpu-test-utils.js` 和
+`test/unit/addons/tsl/gpu-raw-test-utils.js` 的提交，待上游毕业成正式
+API 后再评估切换或提供兼容层。（实测：上游原型至今演化甚微。）
 
 ## 平台发现
 
@@ -53,9 +59,12 @@ instanceIndex 寻址、AssertWriteNode 式类型解析），不依赖深度耦�
 - **发现**：shader 构建失败（如 NaN literal 进入生成的 WGSL）时，
   `computeAsync` 可能**不 reject**，只异步 console.error；所有缓冲读回
   零初始化，全部断言以 0-vs-0 静默假通过。
-- **决策**：缓冲预留一行无条件写 canary `12345.6789`，回读后先检查，缺失
-  即抛出带诊断信息的错误。WebGL2 存储缓冲实际只能读一次，canary 与数据比
-  较共享同一次读取的数组。
+- **决策**：缓冲预留一行无条件写 canary，每次 test × backend 调用随机生成
+  （`randomCanaryValue()`）。回读后使用严格相等（`===`）检查。WebGL2 存储
+  缓冲实际只能读一次，canary 与数据比较共享同一次读取的数组。
+- **上游注记**：上游发现并复现了固定常量 canary 在 WebGL2 fallback 上的
+  stale-kernel 漏洞。本库已采用相同的随机 canary 策略（`randomCanaryValue()`）
+  来修复该隐患。
 
 ### TSL `color()` 节点类型归一化
 
@@ -70,15 +79,19 @@ instanceIndex 寻址、AssertWriteNode 式类型解析），不依赖深度耦�
   在 `fract`/`step` 阈值附近两者可能落在不连续点两侧，即使双方都"正确"
   也会失败。
 - **决策**：(1) `expected(x, i)` 接收 f32 舍入后的输入（`Math.fround`），
-  与 GPU 实际接收一致；(2) fuzz 扫描用半步采样 `(i + 0.5) / n`，输入永不
-  精确落在不连续点上；(3) CPU 参考比较 shader 字面量时使用 f32 舍入后的
-  常数（`Math.fround(0.15)` 而非 `0.15`）。
+  与 GPU 实际接收一致；(2) CPU 参考比较 shader 字面量时使用 f32 舍入后的
+  常数（`Math.fround(0.15)` 而非 `0.15`）；(3) 建议用户在靠近不连续点
+  (`fract`, `step`) 时使用半步采样 `(i + 0.5) / n` 以避免输入精确落在不
+  连续点上——这是文档中的用户建议，库本身不强制。
 
 ### 真实场景片段覆盖
 
-现有片段：条纹着色（Fn/step/abs/mix/color）、动画扭曲条纹
-（uv/time/distance/fract/negate）、If/Else 条件选色、风格化边缘光照
-（normalize/dot/max/pow/smoothstep/clamp，三 vec3 输入 Fn）。
+计划中的片段（尚未实现）：
+
+- 条纹着色（Fn/step/abs/mix/color）
+- 动画扭曲条纹（uv/time/distance/fract/negate）
+- If/Else 条件选色
+- 风格化边缘光照（normalize/dot/max/pow/smoothstep/clamp，三 vec3 输入 Fn）
 
 新片段的收录标准：必须覆盖尚未测试的编译模式；几何/渲染上下文节点
 （positionLocal、uv、time）必须重构为显式参数。
@@ -117,6 +130,9 @@ instanceIndex 寻址、AssertWriteNode 式类型解析），不依赖深度耦�
 - **决策**：整数回读辅助函数要求传入底层 storage attribute（`node.value`），
   而非 TSL 节点本身。这提供了编译时类型安全并保持辅助函数职责单一；与无
   类型约束的上游原型不同，我们不自动解包节点。调用者显式传入 `.value`。
+- **决策**：当设置了 `requiredFeature` 且渲染器不支持该特性时（
+  `renderer.hasFeature(...)` 返回 false），测试会带警告软跳过，而非失败。
+  这使得 `subgroups` 和其他特性依赖测试在不同后端和 CI 环境中保持可移植。
 
 ## 测试分类
 

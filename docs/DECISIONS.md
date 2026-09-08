@@ -10,23 +10,31 @@
 
 ## Upstream alignment
 
-Reference upstream: three.js PR [#34331](https://github.com/mrdoob/three.js/pull/34331)
-prototype `gpu-test-utils.js` (QUnit-based).
+Reference upstream: three.js prototype GPU test utilities (QUnit-based), currently at:
 
-| Aspect                           | three.js PR #34331                           | Our choice                                  | Rationale                                                             |
-| -------------------------------- | -------------------------------------------- | ------------------------------------------- | --------------------------------------------------------------------- |
-| gpuFuzzTest shape                | `(name, count, buildFn, options)` positional | `(name, spec)` object                       | Self-documenting; CPU reference values are central to our purpose     |
-| Fuzz input generation            | GPU-side `hash(instanceIndex)`               | CPU deterministic function → storage buffer | Supports arbitrary distributions; matches CPU expected function model |
-| Per-instance multiple assertions | site budget (`maxSitesPerInstance`)          | single `test` expression                    | Avoids WebGL2 transform-feedback buffer budget issues                 |
-| message parameter                | yes                                          | yes                                         | Implemented, tested, and documented                                   |
+- [`gpu-test-utils.js`](https://github.com/mrdoob/three.js/blob/dev/test/unit/addons/tsl/gpu-test-utils.js) — `gpuTest` / `gpuFuzzTest`
+- [`gpu-raw-test-utils.js`](https://github.com/mrdoob/three.js/blob/dev/test/unit/addons/tsl/gpu-raw-test-utils.js) — `rawComputeTest`
+
+| Aspect                           | Upstream                                                                                            | Our choice                                                               | Rationale                                                                                |
+| -------------------------------- | --------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------- |
+| gpuFuzzTest shape                | `(name, count, buildFn, options)` positional                                                        | `(name, spec)` object                                                    | Self-documenting; CPU reference values are central to our purpose                        |
+| Fuzz input generation            | GPU-side from `instanceIndex` (buildFn receives the instance index; inputs are derived by the user) | CPU deterministic function → storage buffer                              | Supports arbitrary distributions; matches CPU expected function model                    |
+| Per-instance multiple assertions | site budget (`maxSitesPerInstance`)                                                                 | single `test` expression                                                 | Avoids WebGL2 transform-feedback buffer budget issues                                    |
+| message parameter                | yes                                                                                                 | yes                                                                      | Implemented, tested, and documented                                                      |
+| Backend configuration            | Per-call `backends` option only                                                                     | `configureGPU({ backends })` for library-wide defaults + per-call option | More convenient for suites with a fixed backend policy                                   |
+| Renderer lifecycle               | Shared cache, no automatic cleanup                                                                  | Shared cache + auto-dispose via `afterAll` in main entry                 | Reduces boilerplate; pure entry remains opt-in for manual control                        |
+| Canary value generation          | Random per test × backend (`randomCanaryValue()`)                                                   | Random per test × backend (`randomCanaryValue()`)                        | Adopted upstream strategy to prevent stale-kernel false positives on the WebGL2 fallback |
+| gpuFuzzTest matrix support       | Opt-in via `maxColumnsPerSite` (default 1; 3/4 for mat3/mat4)                                       | Not supported (only 1–4 components via `padExpected`)                    | Avoid WebGL2 buffer budget; keep API simple                                              |
+| rawComputeTest context           | `{ assert, renderer }` (includes QUnit assert object)                                               | `{ renderer }` (caller uses Vitest's `expect`)                           | Framework-agnostic; caller controls assertion style                                      |
 
 **Overall strategy**: maintain our own implementation, absorb upstream design
 ideas (canary detection, bare-instanceIndex addressing, AssertWriteNode-style
 type resolution), and do not depend on prototype code deeply coupled to QUnit.
-We monitor commits touching `test/unit/addons/tsl/gpu-test-utils.js` and will
-re-evaluate switching or providing a compatibility layer once the upstream
-graduates into an official API. (Empirically, the prototype commit `5132c1fa`
-has had zero evolution so far.)
+We monitor commits touching `test/unit/addons/tsl/gpu-test-utils.js` and
+`test/unit/addons/tsl/gpu-raw-test-utils.js`, and will re-evaluate switching
+or providing a compatibility layer once the upstream graduates into an
+official API. (Empirically, the upstream prototype has had minimal
+evolution so far.)
 
 ## Platform findings
 
@@ -62,10 +70,15 @@ has had zero evolution so far.)
   generated WGSL), `computeAsync` may **not reject**, only logging an async
   console error; all buffers read back zero-initialized, causing every
   assertion to silently pass as 0-vs-0.
-- **Decision**: reserve one row for an unconditional canary `12345.6789`,
-  check it after readback, and throw a detailed error if missing. WebGL2
-  storage buffers are effectively single-read, so the canary and data
-  comparisons share the same readback array.
+- **Decision**: reserve one row for an unconditional canary, generated
+  randomly per test × backend invocation (`randomCanaryValue()`). Check it
+  after readback using strict equality (`===`). WebGL2 storage buffers are
+  effectively single-read, so the canary and data comparisons share the same
+  readback array.
+- **Upstream note**: Upstream identified and reproduced a stale-kernel
+  vulnerability with fixed constant canaries on the WebGL2 fallback. We have
+  adopted the same random-canary strategy (`randomCanaryValue()`) to close
+  that gap.
 
 ### TSL `color()` node type normalization
 
@@ -81,17 +94,21 @@ has had zero evolution so far.)
   the two can land on opposite sides of a discontinuity and fail even though
   both are "correct".
 - **Decision**: (1) `expected(x, i)` receives the f32-rounded input
-  (`Math.fround`), matching what the GPU actually gets; (2) fuzz sweeps use
-  half-step sampling (`(i + 0.5) / n`) so inputs never land exactly on
-  discontinuities; (3) CPU references must compare against f32-rounded
-  constants (`Math.fround(0.15)`, not `0.15`) when mirroring shader literals.
+  (`Math.fround`), matching what the GPU actually gets; (2) CPU references
+  must compare against f32-rounded constants (`Math.fround(0.15)`, not
+  `0.15`) when mirroring shader literals; (3) users are advised to use
+  half-step sampling (`(i + 0.5) / n`) when sweeping near discontinuities
+  (`fract`, `step`) so inputs never land exactly on them — this is a
+  recommendation in the guide, not enforced by the library.
 
 ### Real-world snippet coverage
 
-Current snippets: band shading (Fn/step/abs/mix/color), animated
-edge-distorted stripes (uv/time/distance/fract/negate), If/Else conditional
-color selection, and stylized rim-lit shading
-(normalize/dot/max/pow/smoothstep/clamp with a three-vec3 Fn).
+Planned snippets (not yet implemented):
+
+- band shading (Fn/step/abs/mix/color)
+- animated edge-distorted stripes (uv/time/distance/fract/negate)
+- If/Else conditional color selection
+- stylized rim-lit shading (normalize/dot/max/pow/smoothstep/clamp with a three-vec3 Fn)
 
 Acceptance criteria for new snippets: they must cover compilation modes not
 yet exercised, and geometry/render-context nodes (positionLocal, uv, time)
@@ -137,6 +154,10 @@ must be refactored into explicit parameters.
   (`node.value`), not the TSL node itself. This gives compile-time safety
   and keeps the helper's responsibility single; unlike the untyped upstream
   prototype, we do not auto-unwrap nodes. Callers explicitly pass `.value`.
+- **Decision**: when `requiredFeature` is set and the renderer does not
+  support it (`renderer.hasFeature(...)` returns false), the test is
+  soft-skipped with a warning instead of failing. This keeps `subgroups`
+  and other feature-dependent tests portable across backends and CI environments.
 
 ## Test classification
 
