@@ -7,16 +7,22 @@ Tests run against both backends by default: `'webgpu'` and `'webgl'` (WebGPURend
 ### Per-Suite Selection
 
 ```ts
+import { it } from "vitest";
 import { gpuTest } from "vitest-browser-three";
+import { float } from "three/tsl";
 
-// Test specific backends
-await gpuTest("smoke", ({ eq }) => eq(float(2).add(3), float(5)), {
-  backends: ["webgpu", "webgl"],
+it("smoke", async () => {
+  // Test specific backends
+  await gpuTest("smoke", ({ eq }) => eq(float(2).add(3), float(5)), {
+    backends: ["webgpu", "webgl"],
+  });
 });
 
-// WebGPU only (for features like subgroup)
-await gpuTest("webgpu only", ({ eq }) => eq(float(2).add(3), float(5)), {
-  backends: ["webgpu"],
+it("webgpu only", async () => {
+  // WebGPU only (for features like subgroups)
+  await gpuTest("webgpu only", ({ eq }) => eq(float(2).add(3), float(5)), {
+    backends: ["webgpu"],
+  });
 });
 ```
 
@@ -69,8 +75,8 @@ import { gpuTest } from "vitest-browser-three"; // auto-cleanup
 If you import from the side-effect-free entry, add cleanup manually:
 
 ```ts
-import { disposeRenderer } from "vitest-browser-three/pure";
 import { afterAll } from "vitest";
+import { disposeRenderer } from "vitest-browser-three/pure";
 
 afterAll(async () => {
   await disposeRenderer();

@@ -43,13 +43,16 @@ export default defineConfig({
 ## Write Your First Test
 
 ```ts
+import { it } from "vitest";
 import { gpuTest } from "vitest-browser-three";
 import { float, sin, vec3 } from "three/tsl";
 
-await gpuTest("vector math", ({ eq, closeRel }) => {
-  eq(float(2).add(3), float(5));
-  closeRel(sin(float(Math.PI / 2)), float(1), 1e-3);
-  closeRel(vec3(1, 2, 3).mul(2), vec3(2, 4, 6));
+it("vector math", async () => {
+  await gpuTest("vector math", ({ eq, closeRel }) => {
+    eq(float(2).add(3), float(5));
+    closeRel(sin(float(Math.PI / 2)), float(1), 1e-3);
+    closeRel(vec3(1, 2, 3).mul(2), vec3(2, 4, 6));
+  });
 });
 ```
 

@@ -19,9 +19,19 @@ closeAbs(sin(float(x)), float(Math.sin(x)), 1e-5);
 SwiftShader (software renderer used in CI/containers) has reduced precision for transcendental functions:
 
 ```ts
-// SwiftShader fast-math sin has ~1e-5 relative error
-await gpuFuzzTest("sin", {
-  tolerance: 1e-3, // Use 1e-3 for trig functions (accounts for platform differences)
+import { it } from "vitest";
+import { gpuFuzzTest } from "vitest-browser-three";
+import { sin } from "three/tsl";
+
+it("sin", async () => {
+  // SwiftShader fast-math sin has ~1e-5 relative error
+  await gpuFuzzTest("sin", {
+    instances: 128,
+    input: (i) => (i / 128) * Math.PI * 2,
+    test: (x) => sin(x),
+    expected: (x) => Math.sin(x),
+    tolerance: 1e-3, // Use 1e-3 for trig functions (accounts for platform differences)
+  });
 });
 ```
 
@@ -59,9 +69,15 @@ eq(float(2).add(3), float(5)); // Exact match
 Tests run against both backends by default. Use `backends` option to target specific backends:
 
 ```ts
-// WebGPU only (required for some features)
-await gpuTest("subgroup", ({ eq }) => eq(...), {
-  backends: ["webgpu"],
+import { it } from "vitest";
+import { gpuTest } from "vitest-browser-three";
+import { float } from "three/tsl";
+
+it("webgpu only", async () => {
+  // WebGPU only (required for some features)
+  await gpuTest("webgpu only", ({ eq }) => eq(float(2).add(3), float(5)), {
+    backends: ["webgpu"],
+  });
 });
 ```
 
@@ -71,6 +87,8 @@ The library uses a canary value to detect silent failures (e.g., shader compilat
 
 ```ts
 import { it, expect } from "vitest";
+import { gpuTest } from "vitest-browser-three";
+import { float } from "three/tsl";
 
 it("detects silent failures", async () => {
   await expect(
@@ -122,15 +140,23 @@ closeRel(rot.mul(vec4(1, 0, 0, 1)), vec4(0, 1, 0, 1), 1e-6);
 Each `mat4` assertion occupies 4 rows. Set `maxAssertions` accordingly:
 
 ```ts
-await gpuTest(
-  "matrices",
-  ({ closeRel }) => {
-    // 2 mat4 assertions = 8 rows needed
-    closeRel(mat4(...), [...], 1e-6);
-    closeRel(mat4(...), [...], 1e-6);
-  },
-  { maxAssertions: 8 },
-);
+import { it } from "vitest";
+import { gpuTest } from "vitest-browser-three";
+import { Matrix4 } from "three/webgpu";
+import { mat4, vec4 } from "three/tsl";
+
+it("matrices", async () => {
+  await gpuTest(
+    "matrices",
+    ({ closeRel }) => {
+      // 2 mat4 assertions = 8 rows needed
+      const rot = mat4(new Matrix4().makeRotationZ(Math.PI / 2));
+      closeRel(rot.mul(vec4(1, 0, 0, 1)), vec4(0, 1, 0, 1), 1e-6);
+      closeRel(rot.mul(vec4(0, 1, 0, 1)), vec4(-1, 0, 0, 1), 1e-6);
+    },
+    { maxAssertions: 8 },
+  );
+});
 ```
 
 ## Test Organization
@@ -140,9 +166,15 @@ await gpuTest(
 Avoid `configureGPU` when running test files in parallel:
 
 ```ts
-// In parallel test files, use per-call backend option
-await gpuTest("test", ({ eq }) => eq(...), {
-  backends: ["webgpu"], // Instead of configureGPU
+import { it } from "vitest";
+import { gpuTest } from "vitest-browser-three";
+import { float } from "three/tsl";
+
+it("parallel test", async () => {
+  // In parallel test files, use per-call backend option
+  await gpuTest("parallel test", ({ eq }) => eq(float(2).add(3), float(5)), {
+    backends: ["webgpu"], // Instead of configureGPU
+  });
 });
 ```
 
@@ -157,8 +189,8 @@ import { gpuTest } from "vitest-browser-three"; // auto-disposes renderer
 For side-effect-free imports:
 
 ```ts
-import { disposeRenderer } from "vitest-browser-three/pure";
 import { afterAll } from "vitest";
+import { disposeRenderer } from "vitest-browser-three/pure";
 
 afterAll(async () => {
   await disposeRenderer();

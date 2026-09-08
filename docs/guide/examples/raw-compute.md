@@ -3,77 +3,90 @@
 ## Atomic Counter
 
 ```ts
+import { it, expect } from "vitest";
 import { rawComputeTest, readUintBuffer } from "vitest-browser-three";
 import { Fn, instancedArray, atomicAdd, uint } from "three/tsl";
 
-await rawComputeTest("atomic counter", { backend: "webgpu" }, async ({ renderer }) => {
-  const counter = instancedArray(1, "uint").toAtomic();
+it("atomic counter", async () => {
+  await rawComputeTest("atomic counter", { backend: "webgpu" }, async ({ renderer }) => {
+    const counter = instancedArray(1, "uint").toAtomic();
 
-  const kernel = Fn(() => {
-    atomicAdd(counter.element(uint(0)), uint(1));
-  })().compute(64, [8]); // 64 invocations, 8 per workgroup
+    const kernel = Fn(() => {
+      atomicAdd(counter.element(uint(0)), uint(1));
+    })().compute(64, [8]); // 64 invocations, 8 per workgroup
 
-  await renderer.computeAsync(kernel);
+    await renderer.computeAsync(kernel);
 
-  const data = await readUintBuffer(renderer, counter.value);
-  expect(data[0]).toBe(64);
+    const data = await readUintBuffer(renderer, counter.value);
+    expect(data[0]).toBe(64);
+  });
 });
 ```
 
 ## Seeded Atomic Operations
 
 ```ts
-import type { WebGPURenderer } from "three/webgpu";
+import { it, expect } from "vitest";
 import { rawComputeTest, readUintBuffer } from "vitest-browser-three";
+import type { WebGPURenderer, StorageInstancedBufferAttribute } from "three/webgpu";
 import { Fn, instancedArray, atomicStore, atomicSub, uint } from "three/tsl";
 
-// counter is a TSL atomic node; its exact type depends on three version
-async function seed(renderer: WebGPURenderer, counter: any, value: number) {
+async function seed(
+  renderer: WebGPURenderer,
+  counter: StorageInstancedBufferAttribute,
+  value: number,
+) {
   const kernel = Fn(() => {
     atomicStore(counter.element(uint(0)), uint(value));
   })().compute(1);
   await renderer.computeAsync(kernel);
 }
 
-await rawComputeTest("seeded subtract", { backend: "webgpu" }, async ({ renderer }) => {
-  const counter = instancedArray(1, "uint").toAtomic();
+it("seeded subtract", async () => {
+  await rawComputeTest("seeded subtract", { backend: "webgpu" }, async ({ renderer }) => {
+    const counter = instancedArray(1, "uint").toAtomic();
 
-  await seed(renderer, counter, 64);
+    await seed(renderer, counter.value, 64);
 
-  const kernel = Fn(() => {
-    atomicSub(counter.element(uint(0)), uint(1));
-  })().compute(64, [8]);
+    const kernel = Fn(() => {
+      atomicSub(counter.element(uint(0)), uint(1));
+    })().compute(64, [8]);
 
-  await renderer.computeAsync(kernel);
+    await renderer.computeAsync(kernel);
 
-  const data = await readUintBuffer(renderer, counter.value);
-  expect(data[0]).toBe(0);
+    const data = await readUintBuffer(renderer, counter.value);
+    expect(data[0]).toBe(0);
+  });
 });
 ```
 
 ## Signed Integer Buffer
 
 ```ts
+import { it, expect } from "vitest";
 import { rawComputeTest, readIntBuffer } from "vitest-browser-three";
 import { Fn, instancedArray, atomicAdd, int } from "three/tsl";
 
-await rawComputeTest("signed counter", { backend: "webgpu" }, async ({ renderer }) => {
-  const counter = instancedArray(1, "int").toAtomic();
+it("signed counter", async () => {
+  await rawComputeTest("signed counter", { backend: "webgpu" }, async ({ renderer }) => {
+    const counter = instancedArray(1, "int").toAtomic();
 
-  const kernel = Fn(() => {
-    atomicAdd(counter.element(int(0)), int(1));
-  })().compute(32, [8]);
+    const kernel = Fn(() => {
+      atomicAdd(counter.element(int(0)), int(1));
+    })().compute(32, [8]);
 
-  await renderer.computeAsync(kernel);
+    await renderer.computeAsync(kernel);
 
-  const data = await readIntBuffer(renderer, counter.value);
-  expect(data[0]).toBe(32);
+    const data = await readIntBuffer(renderer, counter.value);
+    expect(data[0]).toBe(32);
+  });
 });
 ```
 
 ## Atomic Bitwise Operations
 
 ```ts
+import { it, expect } from "vitest";
 import { rawComputeTest, readUintBuffer } from "vitest-browser-three";
 import {
   Fn,
@@ -85,71 +98,81 @@ import {
   shiftLeft,
 } from "three/tsl";
 
-await rawComputeTest("atomic or", { backend: "webgpu" }, async ({ renderer }) => {
-  const counter = instancedArray(1, "uint").toAtomic();
+it("atomic or", async () => {
+  await rawComputeTest("atomic or", { backend: "webgpu" }, async ({ renderer }) => {
+    const counter = instancedArray(1, "uint").toAtomic();
 
-  // Seed with 0
-  const seedKernel = Fn(() => {
-    atomicStore(counter.element(uint(0)), uint(0));
-  })().compute(1);
-  await renderer.computeAsync(seedKernel);
+    // Seed with 0
+    const seedKernel = Fn(() => {
+      atomicStore(counter.element(uint(0)), uint(0));
+    })().compute(1);
+    await renderer.computeAsync(seedKernel);
 
-  // Set bits
-  const kernel = Fn(() => {
-    const bit = shiftLeft(uint(1), instanceIndex);
-    atomicOr(counter.element(uint(0)), bit);
-  })().compute(32, [8]);
+    // Set bits
+    const kernel = Fn(() => {
+      const bit = shiftLeft(uint(1), instanceIndex);
+      atomicOr(counter.element(uint(0)), bit);
+    })().compute(32, [8]);
 
-  await renderer.computeAsync(kernel);
+    await renderer.computeAsync(kernel);
 
-  const data = await readUintBuffer(renderer, counter.value);
-  expect(data[0]).toBe(0xffffffff); // All 32 bits set
+    const data = await readUintBuffer(renderer, counter.value);
+    expect(data[0]).toBe(0xffffffff); // All 32 bits set
+  });
 });
 ```
 
 ## With Required Feature
 
 ```ts
-await rawComputeTest(
-  "subgroup ops",
-  {
-    backend: "webgpu",
-    requiredFeature: "subgroups",
-  },
-  async ({ renderer }) => {
-    // Test subgroup-specific features
-    // This test will be soft-skipped if the subgroups feature is not supported
-  },
-);
+import { it } from "vitest";
+import { rawComputeTest } from "vitest-browser-three";
+
+it("subgroup ops", async () => {
+  await rawComputeTest(
+    "subgroup ops",
+    {
+      backend: "webgpu",
+      requiredFeature: "subgroups",
+    },
+    async ({ renderer }) => {
+      // Test subgroup-specific features
+      // This test will be soft-skipped if the subgroup feature is not supported
+    },
+  );
+});
 ```
 
 ## Multiple Output Buffers
 
 ```ts
+import { it, expect } from "vitest";
 import { rawComputeTest, readUintBuffer } from "vitest-browser-three";
 import { Fn, instancedArray, atomicStore, atomicLoad, uint, instanceIndex } from "three/tsl";
 
-await rawComputeTest("load store", { backend: "webgpu" }, async ({ renderer }) => {
-  const counter = instancedArray(1, "uint").toAtomic();
-  const output = instancedArray(16, "uint");
+it("load store", async () => {
+  await rawComputeTest("load store", { backend: "webgpu" }, async ({ renderer }) => {
+    const counter = instancedArray(1, "uint").toAtomic();
+    const output = instancedArray(16, "uint");
 
-  // Seed counter
-  await renderer.computeAsync(
-    Fn(() => {
-      atomicStore(counter.element(uint(0)), uint(424242));
-    })().compute(1),
-  );
+    // Seed counter
+    await renderer.computeAsync(
+      Fn(() => {
+        atomicStore(counter.element(uint(0)), uint(424242));
+      })().compute(1),
+    );
 
-  // Load and store
-  const kernel = Fn(() => {
-    output.element(instanceIndex).assign(atomicLoad(counter.element(uint(0))));
-  })().compute(16, [8]);
+    // Load and store
+    const kernel = Fn(() => {
+      output.element(instanceIndex).assign(atomicLoad(counter.element(uint(0))));
+    })().compute(16, [8]);
 
-  await renderer.computeAsync(kernel);
+    await renderer.computeAsync(kernel);
 
-  const data = await readUintBuffer(renderer, output.value);
-  for (const value of data) {
-    expect(value).toBe(424242);
-  }
+    const data = await readUintBuffer(renderer, output.value);
+    for (const value of data) {
+      expect(value).toBe(424242);
+    }
+  });
 });
 ```
