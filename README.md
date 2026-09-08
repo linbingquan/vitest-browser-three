@@ -54,6 +54,34 @@ it("fuzz testing", async () => {
 - **Fuzz testing**: Deterministic inputs with CPU reference comparison, supporting both relative and absolute tolerance
 - **Type-safe**: Full TypeScript support
 
+## Pure API
+
+For advanced users and library authors, the `vitest-browser-three/pure` entry
+exports the same core GPU test primitives **without any implicit side effects**.
+Unlike the main entry, it does not register a global `afterAll` hook to dispose
+renderers — you are in full control of backend selection, resource lifecycle,
+and test setup.
+
+```ts
+import { it, beforeAll, afterEach } from "vitest";
+import { gpuTest, configureGPU, disposeRenderer } from "vitest-browser-three/pure";
+import { float } from "three/tsl";
+
+beforeAll(() => configureGPU({ backends: ["webgpu"] }));
+afterEach(async () => {
+  await disposeRenderer();
+});
+
+it("manual setup", async () => {
+  await gpuTest("core assertion", ({ eq }) => {
+    eq(float(2).add(3), float(5));
+  });
+});
+```
+
+See [docs/guide/pure.md](./docs/guide/pure.md) for full documentation, including
+`rawComputeTest` and low-level buffer readback.
+
 ## Compatibility
 
 This library is developed and tested against `three@0.185.x` and `vitest@4.x`.
