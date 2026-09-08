@@ -16,7 +16,7 @@ expected values instead of a bare test id.
 
 ```bash
 npm install three @types/three
-npm install -D @vitest/browser @vitest/browser-playwright playwright vitest
+npm install -D @vitest/browser @vitest/browser-playwright playwright vitest vitest-browser-three
 ```
 
 > You can also use pnpm, yarn or other package managers.
@@ -49,10 +49,11 @@ it("fuzz testing", async () => {
 
 ## Features
 
-- **Batch assertions**: One compute dispatch per test suite
+- **Batch assertions**: A single compute dispatch per backend per test call
 - **Multi-backend**: WebGPU with WebGL2 fallback, soft-skipped when unavailable
 - **Fuzz testing**: Deterministic inputs with CPU reference comparison, supporting both relative and absolute tolerance
 - **Type-safe**: Full TypeScript support
+- **Raw compute access**: Full dispatch control, atomic memory, and integer buffer readback
 
 ## Pure API
 
