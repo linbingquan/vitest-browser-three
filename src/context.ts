@@ -22,7 +22,7 @@ const renderers: Record<BackendName, BackendEntry> = {
 };
 
 /** @internal Exported for library-internal use (e.g. src/index.ts cleanup); not part of the public API. */
-export function getRenderer(backend: BackendName = "webgpu"): Promise<WebGPURenderer> {
+export async function getRenderer(backend: BackendName = "webgpu"): Promise<WebGPURenderer> {
   const entry = renderers[backend];
   if (!entry.promise && !entry.failed) {
     const renderer = new WebGPURenderer({ antialias: false, ...BACKEND_OPTIONS[backend] });
@@ -30,11 +30,8 @@ export function getRenderer(backend: BackendName = "webgpu"): Promise<WebGPURend
     entry.promise = renderer.init().then(() => renderer);
     // Attach a non-rethrowing catch to mark failure and silence unhandled
     // rejection, while preserving the rejected state for the original caller.
-    entry.promise.catch((error) => {
+    entry.promise.catch(() => {
       entry.failed = true;
-      console.warn(
-        `[vitest-browser-three] "${backend}" backend is not available in this environment (${error?.message ?? error}) — tests requiring it will be skipped.`,
-      );
     });
   }
   if (entry.failed || !entry.promise) {

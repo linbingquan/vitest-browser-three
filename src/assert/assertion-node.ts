@@ -9,6 +9,8 @@ import type { AssertionKind } from "./compare.ts";
 import { MATRIX_LAYOUT } from "./constants.ts";
 import { padToVec4, toVar } from "./convert.ts";
 
+type SetupBuilder = NodeBuilderLike & Parameters<Node["getNodeType"]>[0];
+
 /**
  * A statement node that resolves the real types of its two values at shader
  * build time (setup(builder) is the only place where a real NodeBuilder
@@ -48,10 +50,7 @@ export class AssertionNode extends Node {
     this.baseRow = baseRow;
   }
 
-  // three's real NodeBuilder class has no usable type in @types/three; the
-  // intersection below declares only what we rely on (see NodeBuilderLike)
-  // while staying assignable to the base setup signature.
-  setup(builder: NodeBuilderLike & Parameters<Node["getNodeType"]>[0]): undefined {
+  setup(builder: SetupBuilder): undefined {
     // TSL's "color" type behaves as vec3 in shaders; normalize so color()
     // nodes can be compared against vec3 values/constants directly.
     const normalizeType = (t: string) => (t === "color" ? "vec3" : t);
@@ -67,11 +66,9 @@ export class AssertionNode extends Node {
     const matrixLayout = MATRIX_LAYOUT[type1];
     let columns: number;
     let columnLength: number;
-    let isMatrix: boolean;
 
     if (matrixLayout !== undefined) {
       ({ columns, columnLength } = matrixLayout);
-      isMatrix = true;
     } else {
       // Defensively check that getTypeLength exists before calling
       if (typeof builder.getTypeLength !== "function") {
@@ -81,7 +78,6 @@ export class AssertionNode extends Node {
       }
       columnLength = builder.getTypeLength(type1);
       columns = 1;
-      isMatrix = false;
       if (!(columnLength >= 1 && columnLength <= 4)) {
         throw new Error(
           `[vitest-browser-three] unsupported assertion type "${type1}" (${columnLength} components) — only scalars, vecN, mat3 and mat4 are supported.`,
@@ -100,8 +96,8 @@ export class AssertionNode extends Node {
     const v2 = toVar(this.value2);
 
     for (let c = 0; c < columns; c++) {
-      const col1 = isMatrix ? (v1 as unknown as NodeWithElement).element(c) : v1;
-      const col2 = isMatrix ? (v2 as unknown as NodeWithElement).element(c) : v2;
+      const col1 = matrixLayout !== undefined ? (v1 as unknown as NodeWithElement).element(c) : v1;
+      const col2 = matrixLayout !== undefined ? (v2 as unknown as NodeWithElement).element(c) : v2;
       this.writeColumn(c, padToVec4(col1, columnLength), padToVec4(col2, columnLength));
     }
 

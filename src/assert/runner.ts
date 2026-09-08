@@ -21,19 +21,19 @@ export type ExpectedValue = Node | number | number[] | TypedArray;
 
 export interface GPUAssert {
   /** Assert `actual` strictly equals `expected` component-wise; NaN never equals anything, including itself. */
-  eq: (actual: Node, expected: Node, message?: string) => void;
+  eq: (actual: Node, expected: ExpectedValue, message?: string) => void;
   /** Assert `actual` is within `tolerance` (absolute) of `expected` component-wise: |a - e| <= tolerance. */
   closeAbs: (actual: Node, expected: ExpectedValue, tolerance?: number, message?: string) => void;
   /** Assert `actual` is within `tolerance` (relative) of `expected` component-wise: |a - e| <= tolerance * max(|a|, |e|, 1e-12). */
   closeRel: (actual: Node, expected: ExpectedValue, tolerance?: number, message?: string) => void;
   /** Assert each component of `actual` is greater than the corresponding component of `expected`. */
-  greaterThan: (actual: Node, expected: Node, message?: string) => void;
+  greaterThan: (actual: Node, expected: ExpectedValue, message?: string) => void;
   /** Assert each component of `actual` is greater than or equal to the corresponding component of `expected`. */
-  greaterThanOrEqual: (actual: Node, expected: Node, message?: string) => void;
+  greaterThanOrEqual: (actual: Node, expected: ExpectedValue, message?: string) => void;
   /** Assert each component of `actual` is less than the corresponding component of `expected`. */
-  lessThan: (actual: Node, expected: Node, message?: string) => void;
+  lessThan: (actual: Node, expected: ExpectedValue, message?: string) => void;
   /** Assert each component of `actual` is less than or equal to the corresponding component of `expected`. */
-  lessThanOrEqual: (actual: Node, expected: Node, message?: string) => void;
+  lessThanOrEqual: (actual: Node, expected: ExpectedValue, message?: string) => void;
 }
 
 export const DEFAULT_TOLERANCE = 1e-6;
@@ -41,7 +41,9 @@ export const DEFAULT_TOLERANCE = 1e-6;
 export interface GPURunOptions {
   /**
    * Upper bound on assertions per gpuTest call. Buffers are sized
-   * maxAssertions * MAX_COLUMNS rows (+ canary). Default 64.
+   * `maxAssertions * MAX_COLUMNS` rows. The last row is reserved for the canary
+   * value, so the maximum number of actual assertions is `maxAssertions - 1`.
+   * Default 64 (i.e., up to 63 assertions).
    */
   maxAssertions?: number;
   /**
@@ -107,15 +109,18 @@ export async function runBackend(
     };
 
   const assertAPI: GPUAssert = {
-    eq: (a, e, msg) => makeAssertion("eq", 0, msg)(a, e),
+    eq: (a, e, msg) => makeAssertion("eq", 0, msg)(a, isNode(e) ? e : cpuToNode(e)),
     closeAbs: (a, e, tol = DEFAULT_TOLERANCE, msg) =>
       makeAssertion("closeAbs", tol, msg)(a, isNode(e) ? e : cpuToNode(e)),
     closeRel: (a, e, tol = DEFAULT_TOLERANCE, msg) =>
       makeAssertion("closeRel", tol, msg)(a, isNode(e) ? e : cpuToNode(e)),
-    greaterThan: (a, e, msg) => makeAssertion("greaterThan", 0, msg)(a, e),
-    greaterThanOrEqual: (a, e, msg) => makeAssertion("greaterThanOrEqual", 0, msg)(a, e),
-    lessThan: (a, e, msg) => makeAssertion("lessThan", 0, msg)(a, e),
-    lessThanOrEqual: (a, e, msg) => makeAssertion("lessThanOrEqual", 0, msg)(a, e),
+    greaterThan: (a, e, msg) =>
+      makeAssertion("greaterThan", 0, msg)(a, isNode(e) ? e : cpuToNode(e)),
+    greaterThanOrEqual: (a, e, msg) =>
+      makeAssertion("greaterThanOrEqual", 0, msg)(a, isNode(e) ? e : cpuToNode(e)),
+    lessThan: (a, e, msg) => makeAssertion("lessThan", 0, msg)(a, isNode(e) ? e : cpuToNode(e)),
+    lessThanOrEqual: (a, e, msg) =>
+      makeAssertion("lessThanOrEqual", 0, msg)(a, isNode(e) ? e : cpuToNode(e)),
   };
 
   const kernel = Fn(() => {
@@ -241,8 +246,11 @@ export async function gpuTest(
       // Tag failures with the backend so multi-backend runs are diagnosable;
       // append only, so message-based regex assertions keep matching.
       const suffix = `[backend: ${backend}]`;
-      if (error instanceof Error && !error.message.includes(suffix)) {
-        error.message = `${error.message}\n(failed on ${suffix})`;
+      const message = error instanceof Error ? error.message : String(error);
+      if (!message.includes(suffix)) {
+        const wrapped = new Error(`${message}\n(failed on ${suffix})`);
+        wrapped.cause = error;
+        throw wrapped;
       }
       throw error;
     }

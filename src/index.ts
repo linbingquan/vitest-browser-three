@@ -13,7 +13,7 @@ export {
 } from "./pure.ts";
 export { gpuFuzzTest, type FuzzSpec } from "./pure.ts";
 export { disposeRenderer, isBackendAvailable, type BackendName } from "./pure.ts";
-export { configureGPU } from "./pure.ts";
+export { configureGPU, getDefaultBackends, resetDefaultBackends } from "./pure.ts";
 export {
   rawComputeTest,
   type RawComputeTestOptions,
