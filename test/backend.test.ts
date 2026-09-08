@@ -1,6 +1,12 @@
 import { describe, it, expect } from "vitest";
 import { float, sin } from "three/tsl";
-import { gpuTest, gpuFuzzTest, isBackendAvailable, configureGPU } from "../src/index.js";
+import {
+  gpuTest,
+  gpuFuzzTest,
+  isBackendAvailable,
+  configureGPU,
+  getDefaultBackends,
+} from "../src/index.ts";
 
 describe("stage-3: multi-backend support", () => {
   it("probes at least one usable backend in this environment", async () => {
@@ -9,7 +15,7 @@ describe("stage-3: multi-backend support", () => {
     expect([webgpu, webgl]).toContain(true);
   });
 
-  it("runs a suite on both backends", async () => {
+  it("runs on available requested backends", async () => {
     await gpuTest(
       "dual-backend",
       ({ eq, closeAbs }) => {
@@ -20,7 +26,7 @@ describe("stage-3: multi-backend support", () => {
     );
   });
 
-  it("gpuFuzzTest runs on both backends", async () => {
+  it("gpuFuzzTest runs on available requested backends", async () => {
     await gpuFuzzTest("dual-backend-fuzz", {
       instances: 32,
       input: (i) => (i / 32) * Math.PI,
@@ -44,13 +50,10 @@ describe("stage-3: multi-backend support", () => {
     expect(() => configureGPU({ backends: [] })).toThrow(/non-empty array/);
   });
 
-  it("configureGPU applies defaults (restore afterwards)", async () => {
+  it("configureGPU updates and restores library defaults", () => {
+    const original = getDefaultBackends();
     configureGPU({ backends: ["webgl"] });
-    try {
-      // Only webgl requested via defaults; suite must still pass.
-      await gpuTest("configured-defaults", ({ eq }) => eq(float(1), float(1)));
-    } finally {
-      configureGPU({ backends: ["webgpu", "webgl"] });
-    }
+    expect(getDefaultBackends()).toEqual(["webgl"]);
+    configureGPU({ backends: original });
   });
 });

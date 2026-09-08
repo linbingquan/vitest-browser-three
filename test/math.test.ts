@@ -3,68 +3,99 @@ import { float, sin, cos, vec2, vec3, vec4, mat3, mat4 } from "three/tsl";
 import { blendColor } from "three/tsl";
 import { Matrix4 } from "three/webgpu";
 import { gpuTest, gpuFuzzTest } from "../src/index.ts";
+import { DEFAULT_BACKENDS } from "../src/config.ts";
 
 describe("gpu smoke tests", () => {
   it("scalar math", async () => {
-    await gpuTest("scalar", ({ closeRel }) => {
-      closeRel(sin(float(Math.PI / 2)), 1);
-      closeRel(float(2).add(3), 5);
-    });
+    await gpuTest(
+      "scalar",
+      ({ closeRel }) => {
+        closeRel(sin(float(Math.PI / 2)), 1);
+        closeRel(float(2).add(3), 5);
+      },
+      { backends: DEFAULT_BACKENDS },
+    );
   });
 
   it("vector ops vs CPU reference", async () => {
     const v = vec3(1, 2, 3);
-    await gpuTest("vector", ({ closeRel }) => {
-      closeRel(v.mul(2), vec3(2, 4, 6));
-      closeRel(v.add(vec3(0.5, 0.5, 0.5)), [1.5, 2.5, 3.5]);
-      closeRel(vec4(v, 1), vec4(1, 2, 3, 1));
-      closeRel(vec2(3, 4).length(), float(5));
-    });
+    await gpuTest(
+      "vector",
+      ({ closeRel }) => {
+        closeRel(v.mul(2), vec3(2, 4, 6));
+        closeRel(v.add(vec3(0.5, 0.5, 0.5)), [1.5, 2.5, 3.5]);
+        closeRel(vec4(v, 1), vec4(1, 2, 3, 1));
+        closeRel(vec2(3, 4).length(), float(5));
+      },
+      { backends: DEFAULT_BACKENDS },
+    );
   });
 
   it("rejects more than 4 components in CPU constants", async () => {
     await expect(
-      gpuTest("too-many-components", ({ closeRel }) => {
-        closeRel(float(1), [1, 2, 3, 4, 5]);
-      }),
+      gpuTest(
+        "too-many-components",
+        ({ closeRel }) => {
+          closeRel(float(1), [1, 2, 3, 4, 5]);
+        },
+        { backends: DEFAULT_BACKENDS },
+      ),
     ).rejects.toThrow(/components, got 5/);
   });
 
   it("rejects tests without assertions", async () => {
-    await expect(gpuTest("no-assertions", () => {})).rejects.toThrow(/no assertions/);
+    await expect(
+      gpuTest("no-assertions", () => {}, { backends: DEFAULT_BACKENDS }),
+    ).rejects.toThrow(/no assertions/);
   });
 
   it("fails with a dump when values mismatch", async () => {
     await expect(
-      gpuTest("mismatch", ({ closeRel }) => {
-        closeRel(float(1), float(2), 1e-6);
-      }),
+      gpuTest(
+        "mismatch",
+        ({ closeRel }) => {
+          closeRel(float(1), float(2), 1e-6);
+        },
+        { backends: DEFAULT_BACKENDS },
+      ),
     ).rejects.toThrow(/actual.*expected/s);
   });
 
   it("multi-assertion: reports the exact failing assertion index", async () => {
     await expect(
-      gpuTest("multi-row-addressing", ({ closeRel }) => {
-        closeRel(float(1), float(1)); // #1 correct
-        closeRel(float(2), float(3)); // #2 deliberately wrong
-        closeRel(float(4), float(4)); // #3 correct
-      }),
+      gpuTest(
+        "multi-row-addressing",
+        ({ closeRel }) => {
+          closeRel(float(1), float(1)); // #1 correct
+          closeRel(float(2), float(3)); // #2 deliberately wrong
+          closeRel(float(4), float(4)); // #3 correct
+        },
+        { backends: DEFAULT_BACKENDS },
+      ),
     ).rejects.toThrow(/assertion #2/);
   });
 
   it("tolerance boundary: within tolerance passes", async () => {
-    await gpuTest("tolerance-pass", ({ closeRel }) => {
-      // |1 - 1.0000005| ~ 5e-7 <= 1e-6 * max(1.0000005, 1) ~ 1.0000005e-6
-      closeRel(float(1.0000005), float(1), 1e-6);
-    });
+    await gpuTest(
+      "tolerance-pass",
+      ({ closeRel }) => {
+        // |1 - 1.0000005| ~ 5e-7 <= 1e-6 * max(1.0000005, 1) ~ 1.0000005e-6
+        closeRel(float(1.0000005), float(1), 1e-6);
+      },
+      { backends: DEFAULT_BACKENDS },
+    );
   });
 
   it("tolerance boundary: beyond tolerance fails", async () => {
     await expect(
-      gpuTest("tolerance-fail", ({ closeRel }) => {
-        // |1 - 1.001| relative: 1e-3 > 1e-6 * 1
-        closeRel(float(1.001), float(1), 1e-6);
-      }),
+      gpuTest(
+        "tolerance-fail",
+        ({ closeRel }) => {
+          // |1 - 1.001| relative: 1e-3 > 1e-6 * 1
+          closeRel(float(1.001), float(1), 1e-6);
+        },
+        { backends: DEFAULT_BACKENDS },
+      ),
     ).rejects.toThrow(/tolerance/);
   });
 });
@@ -77,6 +108,7 @@ describe("gpuFuzzTest", () => {
       test: (x) => sin(x),
       expected: (x) => Math.sin(x),
       tolerance: 1e-3,
+      backends: DEFAULT_BACKENDS,
       absolute: true, // sin(π) differs between f32 (GPU) and f64 (CPU) precision
     });
   });
@@ -90,6 +122,7 @@ describe("gpuFuzzTest", () => {
           .mul(sin(x))
           .add(cos(x).mul(cos(x))),
       expected: () => 1,
+      backends: DEFAULT_BACKENDS,
       tolerance: 1e-3, // squared sin/cos approximation errors accumulate
     });
   });
@@ -100,6 +133,7 @@ describe("gpuFuzzTest", () => {
       input: (i) => 0.1 + (i / 32) * 9.9,
       test: (x) => vec2(x, x.mul(2)).length(),
       expected: (x) => Math.hypot(x, 2 * x),
+      backends: DEFAULT_BACKENDS,
     });
   });
 
@@ -110,6 +144,7 @@ describe("gpuFuzzTest", () => {
         input: () => 0,
         test: (x) => x,
         expected: (x) => x,
+        backends: DEFAULT_BACKENDS,
       }),
     ).rejects.toThrow(/positive integer/);
   });
@@ -121,6 +156,7 @@ describe("gpuFuzzTest", () => {
         input: (i) => i,
         test: (x) => x,
         expected: () => [1, 2, 3, 4, 5],
+        backends: DEFAULT_BACKENDS,
       }),
     ).rejects.toThrow(/components, got 5/);
   });
@@ -131,6 +167,7 @@ describe("gpuFuzzTest", () => {
       input: (i) => i,
       test: (x) => x,
       expected: (x) => [x], // should broadcast like a scalar
+      backends: DEFAULT_BACKENDS,
     });
   });
 
@@ -141,6 +178,7 @@ describe("gpuFuzzTest", () => {
         input: (i) => i,
         test: (x) => x.mul(10),
         expected: (x) => (x === 5 ? 999 : x * 10), // only instance 5 is wrong
+        backends: DEFAULT_BACKENDS,
       }),
     ).rejects.toThrow(/instance 5 \(input 5\.0\)/);
   });
@@ -156,29 +194,42 @@ describe("stage-2: type resolution, matrices, relational assertions", () => {
         lessThan(float(3), float(5));
         lessThanOrEqual(float(3), float(3));
       },
+      { backends: DEFAULT_BACKENDS },
     );
   });
 
   it("relational failure reports the operator and values", async () => {
     await expect(
-      gpuTest("relations-fail", ({ lessThan }) => {
-        lessThan(float(5), float(3));
-      }),
+      gpuTest(
+        "relations-fail",
+        ({ lessThan }) => {
+          lessThan(float(5), float(3));
+        },
+        { backends: DEFAULT_BACKENDS },
+      ),
     ).rejects.toThrow(/expected < 3\.0, got 5\.0/);
   });
 
   it("eq is exact (rejects representable differences)", async () => {
     await expect(
-      gpuTest("eq-exact", ({ eq }) => {
-        eq(float(1), float(1.000001)); // distinct in f32
-      }),
+      gpuTest(
+        "eq-exact",
+        ({ eq }) => {
+          eq(float(1), float(1.000001)); // distinct in f32
+        },
+        { backends: DEFAULT_BACKENDS },
+      ),
     ).rejects.toThrow(/expected 1\.0000009536743164, got 1\.0/);
   });
 
   it("eq accepts exactly equal values", async () => {
-    await gpuTest("eq-ok", ({ eq }) => {
-      eq(float(2).mul(3), float(6));
-    });
+    await gpuTest(
+      "eq-ok",
+      ({ eq }) => {
+        eq(float(2).mul(3), float(6));
+      },
+      { backends: DEFAULT_BACKENDS },
+    );
   });
 
   it("mat3 rotation matches CPU reference", async () => {
@@ -191,7 +242,7 @@ describe("stage-2: type resolution, matrices, relational assertions", () => {
         // mat3 is 3 columns of vec3; TSL constructor is column-major like mat4
         closeRel(mat3(c, s, 0, -s, c, 0, 0, 0, 1), [c, s, 0, -s, c, 0, 0, 0, 1], 1e-6);
       },
-      { maxAssertions: 4 }, // mat3 needs 3 rows, one extra row for safety
+      { backends: DEFAULT_BACKENDS, maxAssertions: 4 }, // mat3 needs 3 rows, one extra row for safety
     );
   });
 
@@ -208,7 +259,7 @@ describe("stage-2: type resolution, matrices, relational assertions", () => {
           1e-6,
         );
       },
-      { maxAssertions: 8 }, // one mat4 assertion needs a 4-row stride
+      { backends: DEFAULT_BACKENDS, maxAssertions: 8 }, // one mat4 assertion needs a 4-row stride
     );
   });
 
@@ -225,7 +276,7 @@ describe("stage-2: type resolution, matrices, relational assertions", () => {
         closeRel(rot.mul(vec4(1, 0, 0, 1)), vec4(c, 1, 0, 1), 1e-6);
         closeRel(rot.mul(vec4(0, 1, 0, 1)), vec4(-1, c, 0, 1), 1e-6);
       },
-      { maxAssertions: 8 },
+      { backends: DEFAULT_BACKENDS, maxAssertions: 8 },
     );
   });
 
@@ -240,15 +291,19 @@ describe("stage-2: type resolution, matrices, relational assertions", () => {
           [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1],
         );
       },
-      { maxAssertions: 16 },
+      { backends: DEFAULT_BACKENDS, maxAssertions: 16 },
     );
   });
 
   it("type mismatch throws a clear error", async () => {
     await expect(
-      gpuTest("type-mismatch", ({ eq }) => {
-        eq(float(1), vec3(1, 2, 3));
-      }),
+      gpuTest(
+        "type-mismatch",
+        ({ eq }) => {
+          eq(float(1), vec3(1, 2, 3));
+        },
+        { backends: DEFAULT_BACKENDS },
+      ),
     ).rejects.toThrow(/type mismatch.*"float".*"vec3"/s);
   });
 });
@@ -257,23 +312,34 @@ describe("standard relative tolerance semantics", () => {
   it("closeRel is strict for small expected values", async () => {
     // diff = 5e-7 > 1e-6 * max(|a|,|e|) ~ 1e-7 -> must fail
     await expect(
-      gpuTest("closeRel-small-values", ({ closeRel }) => {
-        closeRel(float(0.1000005), float(0.1), 1e-6);
-      }),
+      gpuTest(
+        "closeRel-small-values",
+        ({ closeRel }) => {
+          closeRel(float(0.1000005), float(0.1), 1e-6);
+        },
+        { backends: DEFAULT_BACKENDS },
+      ),
     ).rejects.toThrow(/tolerance/);
   });
 
   it("closeRel uses the standard relative formula for CPU constants", async () => {
     await expect(
-      gpuTest("expectValue-small-values", ({ closeRel }) => {
-        closeRel(float(0.1000005), 0.1, 1e-6);
-      }),
+      gpuTest(
+        "expectValue-small-values",
+        ({ closeRel }) => {
+          closeRel(float(0.1000005), 0.1, 1e-6);
+        },
+        { backends: DEFAULT_BACKENDS },
+      ),
     ).rejects.toThrow(/tolerance/);
   });
 
   it("rejects invalid maxAssertions", async () => {
     await expect(
-      gpuTest("bad-max", ({ eq }) => eq(float(1), float(1)), { maxAssertions: 0 }),
+      gpuTest("bad-max", ({ eq }) => eq(float(1), float(1)), {
+        backends: DEFAULT_BACKENDS,
+        maxAssertions: 0,
+      }),
     ).rejects.toThrow(/positive integer/);
   });
 });
@@ -281,35 +347,43 @@ describe("standard relative tolerance semantics", () => {
 describe("assertion messages", () => {
   it("custom message appears in failure output", async () => {
     await expect(
-      gpuTest("message-test", ({ closeRel }) => {
-        closeRel(float(1), float(2), 1e-6, "custom context");
-      }),
+      gpuTest(
+        "message-test",
+        ({ closeRel }) => {
+          closeRel(float(1), float(2), 1e-6, "custom context");
+        },
+        { backends: DEFAULT_BACKENDS },
+      ),
     ).rejects.toThrow(/custom context/);
   });
 });
 
 describe("vec4 and blend operations", () => {
   it("blendColor: standard over alpha compositing", async () => {
-    await gpuTest("blendColor", ({ closeAbs }) => {
-      // Fully opaque blend layer completely replaces the base.
-      closeAbs(blendColor(vec4(0.2, 0.4, 0.6, 0.5), vec4(1, 0, 0, 1)), vec4(1, 0, 0, 1), 1e-4);
+    await gpuTest(
+      "blendColor",
+      ({ closeAbs }) => {
+        // Fully opaque blend layer completely replaces the base.
+        closeAbs(blendColor(vec4(0.2, 0.4, 0.6, 0.5), vec4(1, 0, 0, 1)), vec4(1, 0, 0, 1), 1e-4);
 
-      // Fully transparent blend layer leaves the base unchanged.
-      closeAbs(
-        blendColor(vec4(0.2, 0.4, 0.6, 0.7), vec4(1, 1, 1, 0)),
-        vec4(0.2, 0.4, 0.6, 0.7),
-        1e-4,
-      );
+        // Fully transparent blend layer leaves the base unchanged.
+        closeAbs(
+          blendColor(vec4(0.2, 0.4, 0.6, 0.7), vec4(1, 1, 1, 0)),
+          vec4(0.2, 0.4, 0.6, 0.7),
+          1e-4,
+        );
 
-      // General over compositing.
-      const outAlpha = 0.75;
-      const outR = (1 * 0.5 * 0.5) / outAlpha;
-      const outG = (1 * 0.5) / outAlpha;
-      closeAbs(
-        blendColor(vec4(1, 0, 0, 0.5), vec4(0, 1, 0, 0.5)),
-        vec4(outR, outG, 0, outAlpha),
-        1e-4,
-      );
-    });
+        // General over compositing.
+        const outAlpha = 0.75;
+        const outR = (1 * 0.5 * 0.5) / outAlpha;
+        const outG = (1 * 0.5) / outAlpha;
+        closeAbs(
+          blendColor(vec4(1, 0, 0, 0.5), vec4(0, 1, 0, 0.5)),
+          vec4(outR, outG, 0, outAlpha),
+          1e-4,
+        );
+      },
+      { backends: DEFAULT_BACKENDS },
+    );
   });
 });

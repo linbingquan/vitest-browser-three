@@ -17,8 +17,11 @@ import {
   shiftLeft,
   bitNot,
 } from "three/tsl";
-import { rawComputeTest, readUintBuffer, readIntBuffer } from "../src/index.ts";
+import { rawComputeTest, readUintBuffer, readIntBuffer, isBackendAvailable } from "../src/index.ts";
 import type { WebGPURenderer } from "three/webgpu";
+
+// Guard against running WebGPU-only tests when WebGPU is unavailable.
+const webgpuAvailable = await isBackendAvailable("webgpu");
 
 // TSL compute(totalInvocations, [workgroupSize]) semantics:
 //   - 1st param = total thread count (instanceIndex ranges 0..totalInvocations-1)
@@ -58,7 +61,7 @@ async function seedInt(
   await renderer.computeAsync(kernel);
 }
 
-describe("rawComputeTest API validation", () => {
+describe.skipIf(!webgpuAvailable)("rawComputeTest API validation", () => {
   describe("readUintBuffer", () => {
     it("atomicAdd: concurrent adds sum exactly once each", async () => {
       await rawComputeTest("atomicAdd uint", { backend: "webgpu" }, async ({ renderer }) => {
