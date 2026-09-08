@@ -15,8 +15,9 @@ expected values instead of a bare test id.
 ## Install
 
 ```bash
-npm install three @types/three
-npm install -D @vitest/browser @vitest/browser-playwright playwright vitest vitest-browser-three
+npm install -D three @types/three
+npm install -D @vitest/browser @vitest/browser-playwright playwright vitest
+npm install -D vitest-browser-three
 ```
 
 > You can also use pnpm, yarn or other package managers.

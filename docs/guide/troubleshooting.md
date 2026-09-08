@@ -42,7 +42,7 @@ Tests silently pass with all zeros (canary failure):
 ### Common Causes
 
 1. **NaN literal in shader**: `float(Number.NaN)` is invalid WGSL
-2. **Division by zero**: Static division by zero
+2. **Division by zero that produces a non-finite literal** may trigger validation errors (not always; some compilers optimize it away)
 3. **Type mismatches**: Passing wrong type to TSL functions
 
 ### Debugging

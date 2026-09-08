@@ -128,30 +128,27 @@ import { rawComputeTest, readUintBuffer } from "vitest-browser-three/pure";
 import { storage, Fn, uint } from "three/tsl";
 
 it("atomic counter via rawComputeTest", async () => {
-  await rawComputeTest(
-    "atomic add",
-    { backend: "webgpu", requiredFeature: "subgroups" },
-    async ({ renderer }) => {
-      // Create an integer storage buffer
-      const buffer = storage(new Uint32Array([0]), "uint", 0);
+  await rawComputeTest("atomic add", { backend: "webgpu" }, async ({ renderer }) => {
+    // Create an integer storage buffer
+    const buffer = storage(new Uint32Array([0]), "uint", 0);
 
-      // Build a kernel that increments the counter
-      const kernel = Fn(() => {
-        buffer.element(0).assign(buffer.element(0).add(uint(1)));
-      })().compute(1);
+    // Build a kernel that increments the counter
+    const kernel = Fn(() => {
+      buffer.element(0).assign(buffer.element(0).add(uint(1)));
+    })().compute(1);
 
-      await renderer.computeAsync(kernel);
+    await renderer.computeAsync(kernel);
 
-      // Read back as exact integers
-      const data = await readUintBuffer(renderer, buffer.value);
-      expect(data[0]).toBe(1);
-    },
-  );
+    // Read back as exact integers
+    const data = await readUintBuffer(renderer, buffer.value);
+    expect(data[0]).toBe(1);
+  });
 });
 ```
 
-Note: `requiredFeature` is soft-skipped if the backend doesn't support it — the
-test will pass with a warning instead of failing.
+If your kernel requires a specific WebGPU feature (e.g. `'subgroups'`), pass
+`requiredFeature` in the options. The test will be soft-skipped if the backend
+does not support that feature.
 
 ### Reading Integer Buffers
 

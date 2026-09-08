@@ -29,10 +29,16 @@ it("webgpu only", async () => {
 ### Library-Wide Default
 
 ```ts
-import { configureGPU } from "vitest-browser-three";
+import { configureGPU, getDefaultBackends, resetDefaultBackends } from "vitest-browser-three";
 
 // Set default for all subsequent tests
 configureGPU({ backends: ["webgpu"] });
+
+// Get the current default backends (initially ['webgpu', 'webgl'])
+const current = getDefaultBackends();
+
+// Reset to the original defaults
+resetDefaultBackends();
 ```
 
 > **Note**: `configureGPU` mutates global state. Use per-call `backends` options when running test files in parallel.
@@ -61,10 +67,11 @@ Unavailable backends are soft-skipped with a warning. The test only fails when n
 [vitest-browser-three] gpuTest "smoke": skipping "webgpu" backend is not available in this environment.
 ```
 
-Failures are tagged with `[backend: xxx]`:
+Failures are tagged with `[backend: xxx]` (appended on a new line):
 
 ```
-Assertion failed: expected 5, got 3 [backend: webgpu]
+Assertion failed: expected 5, got 3
+(failed on [backend: webgpu])
 ```
 
 ## Renderer Cleanup

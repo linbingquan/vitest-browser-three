@@ -3,11 +3,9 @@
 ## Installation
 
 ```bash
-# Install peer dependencies
-npm install three @types/three
-
-# Install dev dependencies
+npm install -D three @types/three
 npm install -D @vitest/browser @vitest/browser-playwright playwright vitest
+npm install -D vitest-browser-three
 ```
 
 ## Configure Vitest Browser Mode

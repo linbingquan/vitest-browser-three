@@ -5,6 +5,7 @@
 ### Floating-Point Comparisons
 
 Use `closeRel` for most floating-point comparisons.
+Consider `closeAbs` for periodic functions near zero crossings.
 
 ### SwiftShader Considerations
 
@@ -59,12 +60,12 @@ eq(float(2).add(3), float(5)); // Exact match
 
 ### WebGPU vs WebGL
 
-| Feature         | WebGPU           | WebGL             |
-| --------------- | ---------------- | ----------------- |
-| Precision       | Full             | Limited           |
-| Performance     | Hardware         | Software fallback |
-| Storage buffers | Multi-read       | Single-read       |
-| Subgroups       | Via feature flag | Not supported     |
+| Feature         | WebGPU           | WebGL                                      |
+| --------------- | ---------------- | ------------------------------------------ |
+| Precision       | Full             | Limited                                    |
+| Performance     | Hardware         | Hardware (may fall back to software in CI) |
+| Storage buffers | Multi-read       | Single-read                                |
+| Subgroups       | Via feature flag | Not supported                              |
 
 ### Default Behavior
 
