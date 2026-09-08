@@ -54,6 +54,18 @@ API 后再评估切换或提供兼容层。（实测：上游原型至今演化�
   转置关系。
 - **影响**：矩阵测试应通过变换行为验证（如变换后的向量），而非裸元素比较。
 
+### TSL `compute` 分发参数语义
+
+- **发现**：`node.compute(totalInvocations, [workgroupSize])` 的第一个参数
+  是 **总调用次数/实例数**，不是 workgroup 数量。`instanceIndex` 范围从
+  `0` 到 `totalInvocations - 1`。第二个可选参数将线程分组到 workgroup
+  中；省略它或使用 `[1]` 表示每个 workgroup 单线程。
+- **影响**：像 `rawComputeTest` 这样验证跨 workgroup 原子性的测试，应保持
+  `totalInvocations` 等于预期调用次数，并使用 `[workgroupSize]` 控制分组。
+- **上游参考**：three.js `GPUAtomicsStorage.tests.js` 全程使用
+  `.compute(dispatchCount, [WORKGROUP_SIZE])`，断言期望值为
+  `dispatchCount`（而非 `dispatchCount * WORKGROUP_SIZE`）。
+
 ### Canary 静默失败检测
 
 - **发现**：shader 构建失败（如 NaN literal 进入生成的 WGSL）时，
@@ -131,8 +143,10 @@ API 后再评估切换或提供兼容层。（实测：上游原型至今演化�
   而非 TSL 节点本身。这提供了编译时类型安全并保持辅助函数职责单一；与无
   类型约束的上游原型不同，我们不自动解包节点。调用者显式传入 `.value`。
 - **决策**：当设置了 `requiredFeature` 且渲染器不支持该特性时（
-  `renderer.hasFeature(...)` 返回 false），测试会带警告软跳过，而非失败。
-  这使得 `subgroups` 和其他特性依赖测试在不同后端和 CI 环境中保持可移植。
+  `renderer.hasFeature(...)` 返回 false），**或后端不提供特性检测能力**
+  （`typeof renderer.hasFeature !== "function"`，例如 WebGL fallback），
+  测试会带警告软跳过，而非失败。这使得 `subgroups` 和其他特性依赖测试
+  在不同后端和 CI 环境中保持可移植。
 
 ## 测试分类
 

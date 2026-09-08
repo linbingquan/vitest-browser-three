@@ -64,6 +64,20 @@ evolution so far.)
 - **Impact**: matrix tests should verify through transformation behavior
   (e.g., transformed vectors), not raw element comparison.
 
+### TSL `compute` dispatch parameter semantics
+
+- **Finding**: `node.compute(totalInvocations, [workgroupSize])` — the first
+  argument is the **total number of invocations/instances**, not the number of
+  workgroups. `instanceIndex` ranges from `0` to `totalInvocations - 1`.
+  The optional second argument groups threads into workgroups; omit it or
+  use `[1]` for single-thread-per-workgroup dispatch.
+- **Impact**: tests like `rawComputeTest` that verify cross-workgroup atomicity
+  should keep `totalInvocations` equal to the expected call count and use
+  `[workgroupSize]` to control grouping.
+- **Upstream reference**: three.js `GPUAtomicsStorage.tests.js` uses
+  `.compute(dispatchCount, [WORKGROUP_SIZE])` throughout, with assertions
+  expecting `dispatchCount` (not `dispatchCount * WORKGROUP_SIZE`).
+
 ### Canary silent failure detection
 
 - **Finding**: when a shader fails to build (e.g., NaN literal reaching
@@ -155,9 +169,11 @@ must be refactored into explicit parameters.
   and keeps the helper's responsibility single; unlike the untyped upstream
   prototype, we do not auto-unwrap nodes. Callers explicitly pass `.value`.
 - **Decision**: when `requiredFeature` is set and the renderer does not
-  support it (`renderer.hasFeature(...)` returns false), the test is
-  soft-skipped with a warning instead of failing. This keeps `subgroups`
-  and other feature-dependent tests portable across backends and CI environments.
+  support it (`renderer.hasFeature(...)` returns false), **or the backend
+  does not provide feature detection** (`typeof renderer.hasFeature !== "function"`,
+  e.g. WebGL fallback), the test is soft-skipped with a
+  warning instead of failing. This keeps `subgroups` and other
+  feature-dependent tests portable across backends and CI environments.
 
 ## Test classification
 

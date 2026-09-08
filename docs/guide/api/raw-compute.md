@@ -116,7 +116,9 @@ it("subgroup operations", async () => {
 
 ## Soft Skip Behavior
 
-If the backend is unavailable or the required feature is not supported, the test is soft-skipped:
+If the backend is unavailable, the required feature is not supported,
+**or the backend does not support feature detection** (`hasFeature` is not a function),
+the test is soft-skipped:
 
 ```
 [vitest-browser-three] rawComputeTest "subgroup operations": skipping — "webgpu" backend does not support required feature "subgroups".

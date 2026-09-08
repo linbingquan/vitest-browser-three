@@ -97,7 +97,7 @@ it("detects silent failures", async () => {
     gpuTest("nan-literal", ({ closeRel }) => {
       closeRel(float(Number.NaN).add(1), float(1));
     }),
-  ).rejects.toThrow(/canary value missing/);
+  ).rejects.toThrow(/canary mismatch/);
 });
 ```
 

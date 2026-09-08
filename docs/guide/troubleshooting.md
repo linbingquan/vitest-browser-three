@@ -36,7 +36,7 @@ browser: {
 Tests silently pass with all zeros (canary failure):
 
 ```
-[vitest-browser-three] Error: compute kernel never ran — canary value missing
+[vitest-browser-three] Error: gpuTest "nan-literal": the compute kernel never ran (canary mismatch — got 0.0, expected 1234.0). This usually means the shader failed to build...
 ```
 
 ### Common Causes
