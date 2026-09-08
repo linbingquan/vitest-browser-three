@@ -13,8 +13,8 @@ For most TSL expression assertions, use `gpuTest` instead.
 ```ts
 rawComputeTest(
   name: string,
-  options: RawComputeOptions,
-  fn: (ctx: RawComputeContext) => Promise<void> | void
+  options: RawComputeTestOptions,
+  fn: (ctx: RawComputeTestContext) => Promise<void> | void
 ): Promise<void>
 ```
 
@@ -30,7 +30,7 @@ rawComputeTest(
 ## Context
 
 ```ts
-interface RawComputeContext {
+interface RawComputeTestContext {
   renderer: WebGPURenderer;
 }
 ```
@@ -40,61 +40,78 @@ interface RawComputeContext {
 ### Basic Usage
 
 ```ts
+import { it, expect } from "vitest";
 import { rawComputeTest, readUintBuffer } from "vitest-browser-three";
 import { Fn, instancedArray, atomicAdd, uint } from "three/tsl";
 
-await rawComputeTest("atomic counter", { backend: "webgpu" }, async ({ renderer }) => {
-  const counter = instancedArray(1, "uint").toAtomic();
+it("atomic counter", async () => {
+  await rawComputeTest("atomic counter", { backend: "webgpu" }, async ({ renderer }) => {
+    const counter = instancedArray(1, "uint").toAtomic();
 
-  const kernel = Fn(() => {
-    atomicAdd(counter.element(uint(0)), uint(1));
-  })().compute(64, [8]); // 64 invocations, 8 per workgroup
+    const kernel = Fn(() => {
+      atomicAdd(counter.element(uint(0)), uint(1));
+    })().compute(64, [8]); // 64 invocations, 8 per workgroup
 
-  await renderer.computeAsync(kernel);
+    await renderer.computeAsync(kernel);
 
-  const data = await readUintBuffer(renderer, counter.value);
-  expect(data[0]).toBe(64);
+    const data = await readUintBuffer(renderer, counter.value);
+    expect(data[0]).toBe(64);
+  });
 });
 ```
 
 ### Seeded Atomic Operations
 
 ```ts
-import { atomicStore, atomicLoad } from "three/tsl";
+import { it, expect } from "vitest";
+import { rawComputeTest, readUintBuffer } from "vitest-browser-three";
+import type { WebGPURenderer, StorageInstancedBufferAttribute } from "three/webgpu";
+import { Fn, instancedArray, atomicStore, atomicSub, uint } from "three/tsl";
 
-async function seed(renderer, counter, value) {
+async function seed(
+  renderer: WebGPURenderer,
+  counter: StorageInstancedBufferAttribute,
+  value: number,
+) {
   const kernel = Fn(() => {
     atomicStore(counter.element(uint(0)), uint(value));
   })().compute(1);
   await renderer.computeAsync(kernel);
 }
 
-await rawComputeTest("sub", { backend: "webgpu" }, async ({ renderer }) => {
-  const counter = instancedArray(1, "uint").toAtomic();
+it("sub", async () => {
+  await rawComputeTest("sub", { backend: "webgpu" }, async ({ renderer }) => {
+    const counter = instancedArray(1, "uint").toAtomic();
 
-  await seed(renderer, counter, 64); // Initialize to 64
+    await seed(renderer, counter.value, 64); // Initialize to 64
 
-  const kernel = Fn(() => {
-    atomicSub(counter.element(uint(0)), uint(1));
-  })().compute(64, [8]);
+    const kernel = Fn(() => {
+      atomicSub(counter.element(uint(0)), uint(1));
+    })().compute(64, [8]);
 
-  await renderer.computeAsync(kernel);
+    await renderer.computeAsync(kernel);
 
-  const data = await readUintBuffer(renderer, counter.value);
-  expect(data[0]).toBe(0); // 64 - 64 = 0
+    const data = await readUintBuffer(renderer, counter.value);
+    expect(data[0]).toBe(0); // 64 - 64 = 0
+  });
 });
 ```
 
 ### With Required Feature
 
 ```ts
-await rawComputeTest(
-  "subgroup operations",
-  { backend: "webgpu", requiredFeature: "subgroups" },
-  async ({ renderer }) => {
-    // Test subgroup features...
-  },
-);
+import { it } from "vitest";
+import { rawComputeTest } from "vitest-browser-three";
+
+it("subgroup operations", async () => {
+  await rawComputeTest(
+    "subgroup operations",
+    { backend: "webgpu", requiredFeature: "subgroups" },
+    async ({ renderer }) => {
+      // Test subgroup features...
+    },
+  );
+});
 ```
 
 ## Soft Skip Behavior
@@ -102,7 +119,7 @@ await rawComputeTest(
 If the backend is unavailable or the required feature is not supported, the test is soft-skipped:
 
 ```
-[vitest-browser-three] rawComputeTest "subgroup": skipping — "webgpu" backend does not support required feature "subgroups".
+[vitest-browser-three] rawComputeTest "subgroup operations": skipping — "webgpu" backend does not support required feature "subgroups".
 ```
 
 ## See Also

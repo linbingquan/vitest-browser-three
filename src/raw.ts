@@ -21,7 +21,7 @@ export interface RawComputeTestOptions {
   backend?: BackendName;
 
   /**
-   * WebGPU feature required by this test (e.g. 'subgroup').
+   * WebGPU feature required by this test (e.g. 'subgroups').
    * If the renderer doesn't report the feature, the test is soft-skipped.
    */
   requiredFeature?: string;
@@ -114,6 +114,9 @@ export async function rawComputeTest(
  * Unlike `readStorage` which returns Float32Array, this preserves integer
  * values exactly.
  *
+ * **Important**: Pass `buffer.value` (the `StorageInstancedBufferAttribute`),
+ * not the TSL node returned by `storage()` or `instancedArray().toAtomic()`.
+ *
  * @param renderer - The WebGPURenderer instance
  * @param buffer - Storage buffer attribute whose data is read back.
  * @returns Promise resolving to Uint32Array containing the buffer data
@@ -139,6 +142,9 @@ export async function readUintBuffer(
  * Use this for buffers declared with `int` type in TSL storage definitions.
  * Unlike `readStorage` which returns Float32Array, this preserves signed
  * integer values exactly.
+ *
+ * **Important**: Pass `buffer.value` (the `StorageInstancedBufferAttribute`),
+ * not the TSL node returned by `storage()` or `instancedArray().toAtomic()`.
  *
  * @param renderer - The WebGPURenderer instance
  * @param buffer - Storage buffer attribute whose data is read back.
